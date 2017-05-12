@@ -1,7 +1,10 @@
+from tkinter.scrolledtext import ScrolledText
+
 from chat.room import ChatRoom
 from chat.network.utils import *
 from chat.network.client import Client
 import time, threading
+import tkinter as tk
 
 
 def keep_alive(client, delay):
@@ -67,7 +70,105 @@ def test():
     print(b)
 
 
+widths = [
+    (126,   1), (159,   0), (687,   1), (710,   0), (711,   1),
+    (727,   0), (733,   1), (879,   0), (1154,  1), (1161,  0),
+    (4347,  1), (4447,  2), (7467,  1), (7521,  0), (8369,  1),
+    (8426,  0), (9000,  1), (9002,  2), (11021, 1), (12350, 2),
+    (12351, 1), (12438, 2), (12442, 0), (19893, 2), (19967, 1),
+    (55203, 2), (63743, 1), (64106, 2), (65039, 1), (65059, 0),
+    (65131, 2), (65279, 1), (65376, 2), (65500, 1), (65510, 2),
+    (120831, 1), (262141, 2), (1114109, 1),
+]
+
+
+def get_width(o):
+    """Return the screen column width for unicode ordinal o."""
+    global widths
+    if o == 0xe or o == 0xf:
+        return 0
+    for num, wid in widths:
+        if o <= num:
+            return wid
+    return 1
+
+
+def is_full_width(char):
+    if char >= u'\u4e00' and char <= u'\u9fa5':
+        return True
+    else:
+        return False
+
+
+def align_right(text, width):
+    count = 0
+    for char in text:
+        code = ord(char)
+        if get_width(code) == 2:
+            count += 2
+        elif get_width(code) == 1:
+            count += 1
+        else:
+            continue
+    return text + ' ' * (width - count)
+
+
+class View(tk.Frame):
+    def __init__(self):
+        super(View, self).__init__()
+        button1 = tk.Button(text='ok', command=self.on)
+        button1.grid(row=2, column=0, ipadx='20', pady='10')
+        button2 = tk.Button(text='quit', command=self.quit)
+        button2.grid(row=2, column=1, ipadx='20', pady='10')
+        self.text = tk.Text()
+        self.text.grid(row=1, ipadx='50', ipady='50')
+        self.scroll = tk.Scrollbar(jump=1, command=self.get_scroll)
+        self.scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+    def on(self):
+        fp = No(self.text)
+        fp.start()
+
+    # def off(self):
+    #     self.fp._stop()
+
+    def get_scroll(self):
+        position = self.scroll.get()
+        print(position)
+
+
+class Scroll(ScrolledText):
+    def __init__(self, master=None, **kw):
+        super(Scroll, self).__init__(master, **kw)
+        self.vbar['jump'] = 1
+        self.vbar['command'] = self.get_scroll
+
+    def get_scroll(self, *args):
+        print(self.vbar.get())
+
+
+class No(threading.Thread):
+    def __init__(self, text):
+        super(No, self).__init__()
+        self.text = text
+
+    def run(self):
+        for i in range(10000):
+            self.text.insert(tk.END, str(i) + '\n')
+            time.sleep(0.5)
+
 
 if __name__ == '__main__':
-    start()
+    # start()
     # test()
+    # a = u'哈佛是fsd的方讲哦'
+    # b = u'好搜哈地方讲哦私服会发送'
+    # print(align_right(a, 50) + b)
+    # print(align_right(b, 50) + a)
+    root = View()
+    root.master.title('hhhh')
+    root.mainloop()
+    # a = 'ofsどｆｓｆ;":'
+    # b = '红四方+ふぁjfoasjid'
+    # print(align_right(a, 50) + b)
+    # print(align_right(b, 50) + a)

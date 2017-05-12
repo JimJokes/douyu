@@ -1,5 +1,6 @@
-from chat.room import ChatRoom
 import time, threading
+
+from chat.room import ChatRoom
 
 
 def write(_message):
@@ -106,7 +107,7 @@ def alldanmu(_roomid):
     _room = ChatRoom(_roomid)
     _room.on('chatmsg', on_chat_message)
     _room.on('uenter', on_chat_message)
-    print('开始监控[%s]的直播间弹幕！' % rooms[_roomid])
+    # print('开始监控[%s]的直播间弹幕！' % rooms[_roomid])
     _room.knock()
 
 

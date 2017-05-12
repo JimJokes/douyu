@@ -1,8 +1,8 @@
-from chat.network.client import Client
 import time
 import logging
 import threading
 
+from chat.network.client import Client
 
 RAW_BUFF_SIZE = 4096
 KEEP_ALIVE_INTERVAL_SECONDS = 45
@@ -10,6 +10,7 @@ KEEP_ALIVE_INTERVAL_SECONDS = 45
 
 def keep_alive(client, delay):
     while True:
+        print('发送心跳验证')
         currents_ts = int(time.time())
         client.send({
             'type': 'keeplive',
@@ -27,6 +28,7 @@ class ChatRoom:
 
     def __init__(self, room_id):
         self.room_id = room_id
+        self.client = Client()
 
     def on(self, event_name, callback):
         callback_list = None
@@ -53,8 +55,8 @@ class ChatRoom:
             callback(message)
 
     def knock(self):
-        self.client = Client()
         try:
+            print('发送登录申请')
             self.client.send({'type': 'loginreq', 'roomid': self.room_id})
         except Exception as e:
             print(e)
