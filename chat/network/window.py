@@ -7,7 +7,7 @@ from tkinter.constants import END
 from chat.network.utils import align_right
 from chat.room import ChatRoom
 
-
+# todo: 整合窗口
 class View(tk.Frame):
     def __init__(self, master=None):
         super(View, self).__init__(master)
@@ -31,6 +31,7 @@ class View(tk.Frame):
         label.grid(row=0, column=0)
         self.text = ScrolledText(window)
         self.text.grid(row=1, ipadx='200', ipady='200')
+        self.text.bind('<KeyPress>', lambda e: 'break')
         self.go()
         # b = tk.Button(window, text='开始', command=self.go)
         # b.grid(row=0, column=1)
@@ -41,6 +42,7 @@ class View(tk.Frame):
     def go(self):
         room = self.room.get()
         dammu = Danmu(self.text, room)
+        dammu.setDaemon(True)
         dammu.start()
 
 
@@ -55,6 +57,7 @@ class Danmu(threading.Thread):
         # _room.on('chatmsg', on_chat_message)
         # _room.on('uenter', on_chat_message)
         self.text.insert(END, '开始监控[%s]的直播间弹幕！\n' % self._roomid)
+        j = 0
         for msg in _room.knock():
             try:
                 msg_type = msg.attr('type')
@@ -69,8 +72,14 @@ class Danmu(threading.Thread):
 
                 if msg_type == 'chatmsg':
                     message = align_right('%s [%s] %s' % (now, _ct, _uname), 50) + ':%s' % msg.attr('txt')
+                    y = self.text.vbar.get()[1]
                     self.text.insert(END, message + '\n')
-                    self.text.see(END)
+                    if j > 2999:
+                        self.text.delete(1.0, 2.0)
+                    else:
+                        j += 1
+                    if y == 1.0:
+                        self.text.see(END)
                 # elif msg_type == 'uenter':
                 #     message = '%s [%s]:[%s][等级:%s] 进入了直播间!' % (now, rooms[_roomid], _uname, msg.attr('level'))
                 #     yield message
@@ -82,5 +91,5 @@ class Danmu(threading.Thread):
 if __name__ == "__main__":
     root = View()
     root.master.title('斗鱼弹幕姬')
-    # root.master.resizable(False, False)
+    root.master.resizable(False, False)
     root.mainloop()
