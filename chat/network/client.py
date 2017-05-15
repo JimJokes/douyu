@@ -19,7 +19,7 @@ class Client:
 
     def __init__(self):
         self.s = socket.create_connection((HOST, PORT))
-
+    # todo: 重写receive逻辑
     def receive(self):
 
         self.buff = b''
