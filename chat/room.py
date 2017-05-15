@@ -61,7 +61,7 @@ class ChatRoom:
         except Exception as e:
             print(e)
         app = threading.Thread(target=keep_alive, args=(self.client, KEEP_ALIVE_INTERVAL_SECONDS))
-        # app.setDaemon(True)
+        app.setDaemon(True)
         app.start()
 
         for message in self.client.receive():
@@ -81,3 +81,6 @@ class ChatRoom:
 
             # self.trigger_callbacks(msg_type, message)
             yield message
+    # todo: 断开连接
+    # def cutoff(self):
+
