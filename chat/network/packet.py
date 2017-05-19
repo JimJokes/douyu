@@ -14,7 +14,8 @@ class Packet:
     def to_raw(self):
         raw_length = len(self.body) + 9
         msg_type = MESSAGE_TYPE_FROM_CLIENT
-        return pack('<llhbb%ds' % (len(self.body) + 1), raw_length, raw_length, msg_type, 0, 0, (self.body + '\0').encode())
+        return pack('<llhbb%ds' % (len(self.body) + 1), raw_length, raw_length,
+                    msg_type, 0, 0, (self.body + '\0').encode())
 
     def size(self):
         if self.body is None:
