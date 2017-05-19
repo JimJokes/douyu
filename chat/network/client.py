@@ -1,5 +1,6 @@
 import socket
 import threading
+import os
 from chat.network.packet import Packet
 from chat.network.message import Message
 
@@ -7,6 +8,31 @@ HOST = 'openbarrage.douyutv.com'
 PORT = 8601
 
 MAX_RECV_SIZE = 4096
+
+msg_type = []
+msg_type_file = os.path.join(os.path.dirname(__file__), 'msgtype')
+
+if os.path.exists(msg_type_file):
+    pass
+else:
+    with open(msg_type_file, 'w') as q:
+        pass
+
+with open(msg_type_file, 'r') as f:
+    lines = f.readlines()
+    for line in lines:
+        msg_type.append(line.strip())
+
+
+def write(msg, name):
+    data_file = os.path.join(os.path.dirname(__file__), 'datas')
+    file = os.path.join(data_file, name)
+    if os.path.exists(file):
+        with open(file, 'a') as a:
+            a.write(msg + '\n')
+    else:
+        with open(file, 'w') as b:
+            b.write(msg + '\n')
 
 
 class Client:
@@ -19,7 +45,7 @@ class Client:
 
     def __init__(self):
         self.s = socket.create_connection((HOST, PORT))
-    # todo: 重写receive逻辑
+
     def receive(self):
 
         self.buff = b''
@@ -45,7 +71,6 @@ class Client:
                 if packet is None:
                     break
 
-                # print(self.buff)
                 self.buff = self.buff[packet.size():]
 
                 try:
@@ -60,6 +85,15 @@ class Client:
                     if message is None:
                         break
 
+                    # print(self.msg_buff)
+                    msgtype = message.body['type']
+                    if msgtype not in msg_type:
+                        msg_type.append(message.body['type'])
+                    write(self.msg_buff, msgtype)
+                    # print(msg_type)
+                    # print(message.body)
+                    # print('\n')
+
                     self.msg_buff = self.msg_buff[(message.size() + 1):]
 
                     yield message
@@ -70,11 +104,3 @@ class Client:
             self.s.send(Packet(Message(message_body).to_text()).to_raw())
         finally:
             self.send_lock.release()
-
-    async def srv(self):
-
-        while True:
-            data = await self.s.recv(MAX_RECV_SIZE)
-            if not data:
-                continue
-            await data
