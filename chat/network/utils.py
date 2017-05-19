@@ -56,7 +56,7 @@ def deserialize(raw):
         # except ValueError as e:
         #     pass
         try:
-            if k == 'nl' or k == 'list_level':
+            if k in ('nl', 'list_level', 'frank'):
                 v = deserialize2(unescape(v))
         except ValueError:
             pass
@@ -122,7 +122,7 @@ widths = [
 
 def get_width(o):
     """Return the screen column width for unicode ordinal o."""
-    global widths
+    # global widths
     if o == 0xe or o == 0xf:
         return 0
     for num, wid in widths:
