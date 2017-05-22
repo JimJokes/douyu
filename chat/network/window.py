@@ -1,25 +1,31 @@
 import os
 import tkinter as tk
-import time, threading
 from tkinter.messagebox import *
-
 from tkinter.scrolledtext import *
-from tkinter.constants import END
 
 import re
 
-from chat.network.utils import align_right
-from chat.room import ChatRoom, KEEP_ALIVE_INTERVAL_SECONDS, KeepAlive
+from chat.network.dammu import Danmu
+from chat.network.roomInfo import RoomInfo
 
-star_file = os.path.join(os.path.dirname(__file__), 'starList')
+star_file = os.path.join(os.path.dirname(__file__), 'starList.txt')
 j = 0
 i = 0
-stars = []
 
 
 def read_text():
-    with open(star_file, 'r') as f:
-        return f.readlines()
+    if not os.path.exists(star_file):
+        with open(star_file, 'w', encoding='utf-8'):
+            return []
+    else:
+        with open(star_file, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            return lines
+
+
+def auto_wrap(event, entry):
+    pad = int(str(entry['bd']))
+    entry.configure(wraplength=event.width-pad*2)
 
 
 # todo: 整合窗口
@@ -28,6 +34,7 @@ class View(tk.Frame):
         super(View, self).__init__(master)
         self.pack(padx=500, pady=300)
         self.window()
+        self.stars = []
 
     def window(self):
         frame_left = tk.LabelFrame(text='全部弹幕：', padx=10, pady=10)
@@ -35,11 +42,12 @@ class View(tk.Frame):
 
         self.text_damnu = ScrolledText(frame_left)
         self.text_damnu.place(relwidth=1, relheight=1)
+        self.text_damnu.bind('<KeyPress>', lambda e: 'break')
 
-        frame_right = tk.Frame(relief=tk.FLAT)
-        frame_right.place(relwidth=0.5, relheight=1, relx=0.5)
+        self.frame_right = tk.Frame(relief=tk.FLAT)
+        self.frame_right.place(relwidth=0.5, relheight=1, relx=0.5)
 
-        frame_star = tk.LabelFrame(frame_right, text='关注列表：(一行一个ID)', padx=10, pady=10)
+        frame_star = tk.LabelFrame(self.frame_right, text='关注列表：(一行一个ID)', padx=10, pady=10)
         frame_star.place(relwidth=0.5, relheight=0.3)
         self.text_star = ScrolledText(frame_star)
         self.text_star.place(relwidth=0.8, relheight=1)
@@ -47,7 +55,7 @@ class View(tk.Frame):
         button_star = tk.Button(frame_star, text='确定', command=self.write_stars)
         button_star.place(anchor=tk.NE, relx=1, height=22, rely=0)
 
-        frame_id = tk.Frame(frame_right, relief=tk.FLAT)
+        frame_id = tk.Frame(self.frame_right, relief=tk.FLAT)
         frame_id.place(relwidth=0.5, relheight=0.1, rely=0.3)
         label = tk.Label(frame_id, text='直播间ID：')
         label.place(anchor=tk.NE, relx=0.5, rely=0.1, height=17, relwidth=0.5)
@@ -58,143 +66,72 @@ class View(tk.Frame):
         self.button_start.place(anchor=tk.NE, relx=0.4, rely=0.6, width=55, height=22)
         self.button_stop = tk.Button(frame_id, text='断开连接', state=tk.DISABLED, command=self.off)
         self.button_stop.place(relx=0.6, rely=0.6, width=55, height=22)
+        self.room_info()
 
-        frame_info = tk.LabelFrame(frame_right, text='主播信息：')
-        frame_info.place(relx=0.5, relwidth=0.5, relheight=0.4)
-        label_1 = tk.Label(frame_info, text='直播间标题：')
-        label_1.place(relx=0.1, rely=0.1)
-        self.msg_1 = tk.Label(frame_info, anchor=tk.NW, text='diofhaioafdioajfioahdfioahdifa')
-        self.msg_1.place(relx=0.5, rely=0, relwidth=0.5, relheight=0.3)
-        width = self.msg_1.winfo_reqwidth()
-        print(width)
-        self.msg_1['wraplength'] = width-100
-        label_2 = tk.Label(frame_info, text='主播：')
-        label_2.place(relx=0.1, rely=0.3)
-        label_3 = tk.Label(frame_info, text='开播状态：')
-        label_3.place(relx=0.1, rely=0.4)
-        label_4 = tk.Label(frame_info, text='关注：')
-        label_4.place(relx=0.1, rely=0.5)
-        label_5 = tk.Label(frame_info, text='体重：')
-        label_5.place(relx=0.1, rely=0.6)
-        label_6 = tk.Label(frame_info, text='人气：')
-        label_6.place(relx=0.1, rely=0.7)
-        label_7 = tk.Label(frame_info, text='上次直播：')
-        label_7.place(relx=0.1, rely=0.8)
-
-        frame_star_danmu = tk.LabelFrame(frame_right, text='关注内容：', padx=10, pady=10)
+        frame_star_danmu = tk.LabelFrame(self.frame_right, text='关注内容：', padx=10, pady=10)
         frame_star_danmu.place(rely=0.4, relwidth=1, relheight=0.6)
-        text_star_danmu = ScrolledText(frame_star_danmu)
-        text_star_danmu.place(relwidth=1, relheight=1)
+        self.text_star_danmu = ScrolledText(frame_star_danmu)
+        self.text_star_danmu.place(relwidth=1, relheight=1)
+        self.text_star_danmu.bind('<KeyPress>', lambda e: 'break')
 
-    def read_stars(self):
-        if not os.path.exists(star_file):
-            with open(star_file, 'w'):
-                pass
-        else:
-            for line in read_text():
-                self.text_star.insert(tk.END, line)
+    def room_info(self):
+        self.frame_info = tk.LabelFrame(self.frame_right, text='主播信息：')
+        self.frame_info.place(relx=0.5, relwidth=0.5, relheight=0.4)
 
-    def write_stars(self):
-        text = self.text_star.get(1.0, tk.END)
-        for line in text.split('\n'):
-            if line.strip():
-                stars.append(line.strip())
-        with open(star_file, 'w') as f:
-            f.write('\n'.join(stars))
-        self.text_star.delete(1.0, tk.END)
-        self.read_stars()
+        self.str_1 = self.msg('直播间标题：', 0, relheight=0.2)
+        self.str_2 = self.msg('主播：', 0.2)
+        self.str_3 = self.msg('开播状态：', 0.3)
+        self.str_4 = self.msg('关注：', 0.4)
+        self.str_5 = self.msg('体重：', 0.5)
+        self.str_6 = self.msg('人气：', 0.6)
+        self.str_7 = self.msg('上次直播：', 0.7)
+        self.str_8 = self.msg('上次更新：', 0.8)
 
     def on(self):
         room_id = self.entry_id.get()
         if not re.match('\d+', room_id):
             showwarning('直播间ID不正确', '请输入正确的直播间ID！')
         else:
-            self.dammu = Danmu(self.text_damnu, self.text_star, room_id)
+            self.dammu = Danmu(self.text_damnu, self.text_star_danmu, room_id, self.stars)
             self.dammu.setDaemon(True)
             self.dammu.start()
             self.button_start['state'] = tk.DISABLED
             self.button_stop['state'] = tk.NORMAL
+            self.update_info(room_id)
 
     def off(self):
         self.dammu.stop = True
+        self.info.stop = True
         self.button_start['state'] = tk.NORMAL
         self.button_stop['state'] = tk.DISABLED
 
+    def update_info(self, room_id):
+        string = (self.str_1, self.str_2, self.str_3, self.str_4, self.str_5, self.str_6, self.str_7, self.str_8)
+        self.info = RoomInfo(room_id, *string)
+        self.info.setDaemon(True)
+        self.info.start()
 
-class Danmu(threading.Thread):
-    def __init__(self, text, text_star, roomid):
-        super(Danmu, self).__init__()
-        self.text = text
-        self.text_star = text_star
-        self._roomid = roomid
-        self.stop = False
+    def read_stars(self):
+        for line in read_text():
+            self.text_star.insert(tk.END, line)
 
-    def run(self):
-        _room = ChatRoom(self._roomid)
-        app = KeepAlive(_room.client, KEEP_ALIVE_INTERVAL_SECONDS)
-        app.setDaemon(True)
-        app.start()
+    def write_stars(self):
+        self.stars = []
+        text = self.text_star.get(1.0, tk.END)
+        for line in text.split('\n'):
+            if line.strip():
+                self.stars.append(line.strip())
+        with open(star_file, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(self.stars))
+        self.text_star.delete(1.0, tk.END)
+        self.read_stars()
 
-        self.text.insert(END, '开始监控[%s]的直播间弹幕！\n' % self._roomid)
-        for msg in _room.knock():
-            if self.stop:
-                # _room.stop = True
-                app.stop = True
-                raise SystemExit
-            try:
-                msg_type = msg.attr('type')
-                now = time.strftime("%y-%m-%d %H:%M:%S", time.localtime())
-                _roomid = msg.attr('rid')
-
-                if msg_type == 'chatmsg':
-                    _ct = msg.attr('ct')
-                    if _ct is None:
-                        _ct = '网页'
-                    else:
-                        _ct = '手机'
-                    _uname = msg.attr('nn')
-                    message = align_right('[%s] %s' % (_ct, _uname), 25) + ':%s' % msg.attr('txt')
-                    if _uname in stars:
-                        self.update_star(message)
-                    self.update_dammu(message)
-
-                if msg_type == 'uenter':
-                    _uname = msg.attr('nn')
-                    if _uname in stars:
-                        message = '%s 进入了直播间！' % _uname
-                        self.update_star(message)
-                # elif msg_type == 'uenter':
-                #     message = '%s [%s]:[%s][等级:%s] 进入了直播间!' % (now, rooms[_roomid], _uname, msg.attr('level'))
-                #     yield message
-
-            except KeyError:
-                continue
-
-    def update_dammu(self, message):
-        global j
-        y = self.text.vbar.get()[1]
-        self.text.insert(END, message + '\n')
-        if j > 2999:
-            self.text.delete(1.0, 2.0)
-        else:
-            j += 1
-        if y == 1.0:
-            self.text.see(END)
-
-    def update_star(self, message):
-        global i
-        x = self.text_star.vbar.get()[1]
-        self.text_star.insert(END, message + '\n')
-        if i > 999:
-            self.text_star.delete(1.0, 2.0)
-        else:
-            i += 1
-        if x == 1.0:
-            self.text_star.see(END)
-
-
-if __name__ == "__main__":
-    root = View()
-    root.master.title('斗鱼弹幕姬')
-    root.master.minsize(height=300, width=500)
-    root.mainloop()
+    def msg(self, text, rely, relheight=None):
+        string = tk.StringVar()
+        label = tk.Label(self.frame_info, text=text, anchor=tk.NW)
+        label.place(anchor=tk.NE, relx=0.4, rely=rely, relwidth=0.35)
+        label.bind('<Configure>', lambda x: auto_wrap(x, label))
+        msg = tk.Label(self.frame_info, anchor=tk.NW, justify=tk.LEFT, textvariable=string)
+        msg.place(relx=0.4, rely=rely, relwidth=0.55, relheight=relheight)
+        msg.bind('<Configure>', lambda x: auto_wrap(x, msg))
+        return string
