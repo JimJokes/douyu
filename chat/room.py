@@ -30,36 +30,11 @@ class KeepAlive(threading.Thread):
 class ChatRoom:
     channel_id = -9999
 
-    callbacks = {}
+    # callbacks = {}
 
     def __init__(self, room_id):
         self.room_id = room_id
         self.client = Client()
-        # self.stop = False
-
-    # def on(self, event_name, callback):
-    #     callback_list = None
-    #     try:
-    #         callback_list = self.callbacks[event_name]
-    #     except KeyError:
-    #         callback_list = []
-    #         self.callbacks[event_name] = callback_list
-    #     callback_list.append(callback)
-    #     # print(self.callbacks)
-    #
-    # def trigger_callbacks(self, event_name, message):
-    #     callback_list = None
-    #     try:
-    #         callback_list = self.callbacks[event_name]
-    #     except KeyError:
-    #         logging.info('Message of type "%s" is not handled' % event_name)
-    #         return
-    #     # print(callback_list)
-    #     if callback_list is None or len(callback_list) <= 0:
-    #         return
-    #
-    #     for callback in callback_list:
-    #         callback(message)
 
     def knock(self):
         try:
@@ -67,13 +42,8 @@ class ChatRoom:
             self.client.send({'type': 'loginreq', 'roomid': self.room_id})
         except Exception as e:
             print(e)
-        # app = KeepAlive(self.client, KEEP_ALIVE_INTERVAL_SECONDS)
-        # app.setDaemon(True)
-        # app.start()
 
         for message in self.client.receive():
-            # if self.stop:
-            #     app.stop = True
 
             if not message:
                 continue
