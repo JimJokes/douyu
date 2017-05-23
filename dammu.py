@@ -1,10 +1,12 @@
 import threading
-
 import time
 from tkinter import END
 
-from chat.network.utils import align_right
-from chat.room import ChatRoom, KeepAlive, KEEP_ALIVE_INTERVAL_SECONDS
+from utils import align_right
+from room import ChatRoom, KeepAlive, KEEP_ALIVE_INTERVAL_SECONDS
+
+j = 0
+i = 0
 
 
 class Danmu(threading.Thread):
@@ -43,7 +45,7 @@ class Danmu(threading.Thread):
                     message = align_right('[%s] %s' % (_ct, _uname), 25) + ':%s' % msg.attr('txt')
                     if _uname in self.stars:
                         self.update_star(message)
-                    self.update_dammu(message)
+                    self.update_danmu(message)
 
                 if msg_type == 'uenter':
                     _uname = msg.attr('nn')
@@ -57,7 +59,7 @@ class Danmu(threading.Thread):
             except KeyError:
                 continue
 
-    def update_dammu(self, message):
+    def update_danmu(self, message):
         global j
         y = self.text.vbar.get()[1]
         self.text.insert(END, message + '\n')
@@ -78,3 +80,8 @@ class Danmu(threading.Thread):
             i += 1
         if x == 1.0:
             self.text_star.see(END)
+
+    def delete_danmu(self):
+        global j
+        self.text.delete(1.0, END)
+        j = 0
