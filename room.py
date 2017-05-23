@@ -1,7 +1,12 @@
-import time
+import logging
 import threading
+import time
 
-from chat.network.client import Client
+logging.basicConfig(filename='error.log', level=logging.DEBUG,
+                    format='%(asctime)s %(filename)s[line:%(lineno)s] %(levelname)s %(message)s',
+                    datefmt='%y-%m-%d %H:%M:%S')
+
+from client import Client
 
 RAW_BUFF_SIZE = 4096
 KEEP_ALIVE_INTERVAL_SECONDS = 45
@@ -35,13 +40,14 @@ class ChatRoom:
     def __init__(self, room_id):
         self.room_id = room_id
         self.client = Client()
+        self.client.connect()
 
     def knock(self):
         try:
             # print('发送登录申请')
             self.client.send({'type': 'loginreq', 'roomid': self.room_id})
         except Exception as e:
-            print(e)
+            logging.debug(e)
 
         for message in self.client.receive():
 
@@ -55,7 +61,7 @@ class ChatRoom:
                     self.client.send({'type': 'joingroup', 'rid': self.room_id, 'gid': self.channel_id})
                     print('已连接到弹幕服务器，房间id：%s' % self.room_id)
                 except Exception as e:
-                    print(e)
+                    logging.debug(e)
             if msg_type == 'error':
                 print(message.attr('code'))
 
