@@ -1,16 +1,15 @@
 import os
+import re
 import tkinter as tk
 from tkinter.messagebox import *
 from tkinter.scrolledtext import *
 
-import re
-
-from chat.network.dammu import Danmu
-from chat.network.roomInfo import RoomInfo
+from dammu import Danmu
+from roomInfo import RoomInfo
 
 star_file = os.path.join(os.path.dirname(__file__), 'starList.txt')
-j = 0
-i = 0
+room = None
+stars = []
 
 
 def read_text():
@@ -28,13 +27,11 @@ def auto_wrap(event, entry):
     entry.configure(wraplength=event.width-pad*2)
 
 
-# todo: 整合窗口
 class View(tk.Frame):
     def __init__(self, master=None):
         super(View, self).__init__(master)
         self.pack(padx=500, pady=300)
         self.window()
-        self.stars = []
 
     def window(self):
         frame_left = tk.LabelFrame(text='全部弹幕：', padx=10, pady=10)
@@ -88,19 +85,22 @@ class View(tk.Frame):
         self.str_8 = self.msg('上次更新：', 0.8)
 
     def on(self):
+        global stars
         room_id = self.entry_id.get()
         if not re.match('\d+', room_id):
             showwarning('直播间ID不正确', '请输入正确的直播间ID！')
         else:
-            self.dammu = Danmu(self.text_damnu, self.text_star_danmu, room_id, self.stars)
-            self.dammu.setDaemon(True)
-            self.dammu.start()
+            self.danmu = Danmu(self.text_damnu, self.text_star_danmu, room_id, stars)
+            self.danmu.setDaemon(True)
+            if room_id != room:
+                self.danmu.delete_danmu()
+            self.danmu.start()
             self.button_start['state'] = tk.DISABLED
             self.button_stop['state'] = tk.NORMAL
             self.update_info(room_id)
 
     def off(self):
-        self.dammu.stop = True
+        self.danmu.stop = True
         self.info.stop = True
         self.button_start['state'] = tk.NORMAL
         self.button_stop['state'] = tk.DISABLED
@@ -116,15 +116,21 @@ class View(tk.Frame):
             self.text_star.insert(tk.END, line)
 
     def write_stars(self):
-        self.stars = []
+        global stars
+        stars = []
         text = self.text_star.get(1.0, tk.END)
         for line in text.split('\n'):
             if line.strip():
-                self.stars.append(line.strip())
+                stars.append(line.strip())
         with open(star_file, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(self.stars))
+            f.write('\n'.join(stars))
+            self.text_star_danmu.insert(tk.END, '关注成功！\n')
         self.text_star.delete(1.0, tk.END)
         self.read_stars()
+        try:
+            self.danmu.stars = stars
+        except:
+            pass
 
     def msg(self, text, rely, relheight=None):
         string = tk.StringVar()
