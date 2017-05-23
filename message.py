@@ -1,4 +1,4 @@
-from chat.network.utils import deserialize, serialize
+from utils import deserialize, serialize
 
 
 class Message:
