@@ -1,4 +1,4 @@
-from chat.network.window import View
+from window import View
 
 if __name__ == '__main__':
     root = View()
