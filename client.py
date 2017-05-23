@@ -1,8 +1,16 @@
+import logging
+import os
 import socket
 import threading
-import os
-from chat.network.packet import Packet
-from chat.network.message import Message
+
+logging.basicConfig(filename='error.log', level=logging.DEBUG,
+                    format='%(asctime)s %(filename)s[line:%(lineno)s] %(levelname)s %(message)s',
+                    datefmt='%y-%m-%d %H:%M:%S')
+
+import time
+
+from packet import Packet
+from message import Message
 
 HOST = 'openbarrage.douyutv.com'
 PORT = 8601
@@ -10,29 +18,34 @@ PORT = 8601
 MAX_RECV_SIZE = 4096
 
 msg_type = []
-msg_type_file = os.path.join(os.path.dirname(__file__), 'msgtype')
+type_file = os.path.join(os.path.dirname(__file__), 'msgtype')
+data_file = os.path.join(os.path.dirname(__file__), 'datas')
 
-if os.path.exists(msg_type_file):
+if os.path.exists(type_file):
     pass
 else:
-    with open(msg_type_file, 'w') as q:
+    with open(type_file, 'w') as q:
         pass
 
-with open(msg_type_file, 'r') as f:
+with open(type_file, 'r') as f:
     lines = f.readlines()
     for line in lines:
         msg_type.append(line.strip())
 
 
-def write(msg, name):
-    data_file = os.path.join(os.path.dirname(__file__), 'datas')
-    file = os.path.join(data_file, name)
+def write(msg, file):
     if os.path.exists(file):
         with open(file, 'a') as a:
-            a.write(msg + '\n')
+            try:
+                a.write(msg + '\n')
+            except Exception as e:
+                logging.debug(e)
     else:
         with open(file, 'w') as b:
-            b.write(msg + '\n')
+            try:
+                b.write(msg + '\n')
+            except Exception as e:
+                logging.debug(e)
 
 
 class Client:
@@ -44,7 +57,16 @@ class Client:
     send_lock = threading.Lock()
 
     def __init__(self):
-        self.s = socket.create_connection((HOST, PORT))
+        self.s = None
+
+    def connect(self):
+        for i in range(5):
+            try:
+                self.s = socket.create_connection((HOST, PORT))
+                return
+            except:
+                time.sleep(0.5)
+                continue
 
     def receive(self):
 
@@ -55,12 +77,16 @@ class Client:
 
             try:
                 data = self.s.recv(MAX_RECV_SIZE)
-            except Exception as e:
-                print(e)
+            except ConnectionAbortedError as e1:
+                logging.warning(e1)
+                self.connect()
                 continue
+            except Exception as e:
+                logging.debug(e)
+                time.sleep(0.5)
+                raise
 
             if not data:
-                # time.sleep(0.01)
                 continue
 
             self.buff += data
@@ -76,7 +102,7 @@ class Client:
                 try:
                     self.msg_buff += packet.body.decode('UTF-8')
                 except UnicodeDecodeError as e:
-                    print(e)
+                    logging.info(e)
                     pass
 
                 while True:
@@ -85,14 +111,12 @@ class Client:
                     if message is None:
                         break
 
-                    # print(self.msg_buff)
                     msgtype = message.body['type']
                     if msgtype not in msg_type:
                         msg_type.append(message.body['type'])
-                    write(self.msg_buff, msgtype)
-                    # print(msg_type)
-                    # print(message.body)
-                    # print('\n')
+                        write(msgtype, type_file)
+                    msg_file = os.path.join(data_file, msgtype)
+                    write(self.msg_buff, msg_file)
 
                     self.msg_buff = self.msg_buff[(message.size() + 1):]
 
