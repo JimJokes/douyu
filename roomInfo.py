@@ -38,7 +38,7 @@ class RoomInfo(threading.Thread):
 
             try:
                 with urllib.request.urlopen(room_api) as f:
-                    html = f.read().decode()
+                    html = f.read().decode('utf-8')
 
                 room_info = json.loads(html)['data']
                 gift_info = room_info['gift']
@@ -51,7 +51,7 @@ class RoomInfo(threading.Thread):
 
             try:
                 with urllib.request.urlopen(gift_api) as f:
-                    html = f.read().decode()
+                    html = f.read().decode('utf-8')
 
                 gifts_info = json.loads(html)['data']['prop_gift']
                 for gift in gifts_info:
@@ -77,4 +77,4 @@ class RoomInfo(threading.Thread):
             str_7.set(self.status['start_time'])
             str_8.set(now_str)
 
-            time.sleep(30)
+            time.sleep(60)
