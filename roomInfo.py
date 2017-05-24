@@ -1,5 +1,8 @@
 import json
-import threading, urllib.request
+import threading, urllib.request, logging
+logging.basicConfig(filename='error.log', level=logging.DEBUG,
+                    format='%(asctime)s %(filename)s[line:%(lineno)s] %(levelname)s %(message)s',
+                    datefmt='%y-%m-%d %H:%M:%S')
 
 import time
 
@@ -33,27 +36,33 @@ class RoomInfo(threading.Thread):
             if self.stop:
                 raise SystemExit
 
-            with urllib.request.urlopen(room_api) as f:
-                html = f.read().decode()
+            try:
+                with urllib.request.urlopen(room_api) as f:
+                    html = f.read().decode()
 
-            room_info = json.loads(html)['data']
-            gift_info = room_info['gift']
-            for k in self.status:
-                self.status[k] = room_info[k]
-            for gift in gift_info:
-                self.gifts[gift['id']] = gift['name']
+                room_info = json.loads(html)['data']
+                gift_info = room_info['gift']
+                for k in self.status:
+                    self.status[k] = room_info[k]
+                for gift in gift_info:
+                    self.gifts[gift['id']] = gift['name']
+            except Exception as e:
+                logging.warning(e)
 
-            with urllib.request.urlopen(gift_api) as f:
-                html = f.read().decode()
+            try:
+                with urllib.request.urlopen(gift_api) as f:
+                    html = f.read().decode()
 
-            gifts_info = json.loads(html)['data']['prop_gift']
-            for gift in gifts_info:
-                self.gifts[gift['id']] = gift['name']
+                gifts_info = json.loads(html)['data']['prop_gift']
+                for gift in gifts_info:
+                    self.gifts[gift['id']] = gift['name']
 
-            if self.status['room_status'] == '2':
-                self.status['room_status'] = '下播了'
-            elif self.status['room_status'] == '1':
-                self.status['room_status'] = '直播中'
+                if self.status['room_status'] == '2':
+                    self.status['room_status'] = '下播了'
+                elif self.status['room_status'] == '1':
+                    self.status['room_status'] = '直播中'
+            except Exception as e1:
+                logging.warning(e1)
 
             now = time.localtime()
             now_str = time.strftime('%Y-%m-%d %H:%M:%S', now)
