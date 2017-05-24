@@ -6,10 +6,9 @@ from tkinter.scrolledtext import *
 
 from dammu import Danmu
 from roomInfo import RoomInfo
+import utils
 
 star_file = os.path.join(os.path.dirname(__file__), 'starList.txt')
-room = None
-stars = []
 
 
 def read_text():
@@ -51,6 +50,10 @@ class View(tk.Frame):
         self.read_stars()
         button_star = tk.Button(frame_star, text='确定', command=self.write_stars)
         button_star.place(anchor=tk.NE, relx=1, height=22, rely=0)
+        self.lock_text = tk.StringVar()
+        lock = tk.Button(frame_star, textvariable=self.lock_text, command=self.lock)
+        self.lock_text.set('锁屏')
+        lock.place(anchor=tk.NE, relx=1, height=22, rely=0.3)
 
         frame_id = tk.Frame(self.frame_right, relief=tk.FLAT)
         frame_id.place(relwidth=0.5, relheight=0.1, rely=0.3)
@@ -71,6 +74,14 @@ class View(tk.Frame):
         self.text_star_danmu.place(relwidth=1, relheight=1)
         self.text_star_danmu.bind('<KeyPress>', lambda e: 'break')
 
+    def lock(self):
+        if utils.CheckVar:
+            utils.CheckVar = False
+            self.lock_text.set('滚屏')
+        else:
+            utils.CheckVar = True
+            self.lock_text.set('锁屏')
+
     def room_info(self):
         self.frame_info = tk.LabelFrame(self.frame_right, text='主播信息：')
         self.frame_info.place(relx=0.5, relwidth=0.5, relheight=0.4)
@@ -85,17 +96,16 @@ class View(tk.Frame):
         self.str_8 = self.msg('上次更新：', 0.8)
 
     def on(self):
-        global stars, room
         room_id = self.entry_id.get()
         if not re.match('\d+', room_id):
             showwarning('直播间ID不正确', '请输入正确的直播间ID！')
         else:
-            self.danmu = Danmu(self.text_damnu, self.text_star_danmu, room_id, stars, self.on, self.off)
+            self.danmu = Danmu(self.text_damnu, self.text_star_danmu, room_id, self.on, self.off)
             self.danmu.setDaemon(True)
 
-            if room_id != room:
+            if room_id != utils.room:
                 self.danmu.delete_danmu()
-                room = room_id
+                utils.room = room_id
             self.danmu.start()
             self.button_start['state'] = tk.DISABLED
             self.button_stop['state'] = tk.NORMAL
@@ -118,21 +128,16 @@ class View(tk.Frame):
             self.text_star.insert(tk.END, line)
 
     def write_stars(self):
-        global stars
-        stars = []
+        utils.stars = []
         text = self.text_star.get(1.0, tk.END)
         for line in text.split('\n'):
             if line.strip():
-                stars.append(line.strip())
+                utils.stars.append(line.strip())
         with open(star_file, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(stars))
+            f.write('\n'.join(utils.stars))
             self.text_star_danmu.insert(tk.END, '关注成功！\n')
         self.text_star.delete(1.0, tk.END)
         self.read_stars()
-        try:
-            self.danmu.stars = stars
-        except:
-            pass
 
     def msg(self, text, rely, relheight=None):
         string = tk.StringVar()
