@@ -85,15 +85,17 @@ class View(tk.Frame):
         self.str_8 = self.msg('上次更新：', 0.8)
 
     def on(self):
-        global stars
+        global stars, room
         room_id = self.entry_id.get()
         if not re.match('\d+', room_id):
             showwarning('直播间ID不正确', '请输入正确的直播间ID！')
         else:
-            self.danmu = Danmu(self.text_damnu, self.text_star_danmu, room_id, stars)
+            self.danmu = Danmu(self.text_damnu, self.text_star_danmu, room_id, stars, self.on, self.off)
             self.danmu.setDaemon(True)
+
             if room_id != room:
                 self.danmu.delete_danmu()
+                room = room_id
             self.danmu.start()
             self.button_start['state'] = tk.DISABLED
             self.button_stop['state'] = tk.NORMAL
