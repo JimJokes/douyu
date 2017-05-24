@@ -1,5 +1,4 @@
 import threading
-import time
 from tkinter import END
 from tkinter.messagebox import askyesnocancel
 
@@ -27,13 +26,10 @@ class Danmu(threading.Thread):
         try:
             for msg in _room.knock():
                 if self.stop:
-                    # _room.stop = True
                     app.stop = True
                     raise SystemExit
                 try:
                     msg_type = msg.attr('type')
-                    now = time.strftime("%y-%m-%d %H:%M:%S", time.localtime())
-                    _roomid = msg.attr('rid')
 
                     if msg_type == 'chatmsg':
                         # _ct = msg.attr('ct')
@@ -53,9 +49,6 @@ class Danmu(threading.Thread):
                         if _uname in utils.stars:
                             message = '%s 进入了直播间！' % _uname
                             self.update_star(message)
-                    # elif msg_type == 'uenter':
-                    #     message = '%s [%s]:[%s][等级:%s] 进入了直播间!' % (now, rooms[_roomid], _uname, msg.attr('level'))
-                    #     yield message
 
                 except KeyError:
                     continue
@@ -67,26 +60,20 @@ class Danmu(threading.Thread):
             raise SystemExit
 
     def update_danmu(self, message):
-        # y = self.text.vbar.get()[1]
         self.text.insert(END, message + '\n')
         if utils.j > 2999:
             self.text.delete(1.0, 2.0)
         else:
             utils.j += 1
-        # if y == 1.0:
-        #     self.text.see(END)
         if utils.CheckVar:
             self.text.see(END)
 
     def update_star(self, message):
-        # x = self.text_star.vbar.get()[1]
         self.text_star.insert(END, message + '\n')
         if utils.i > 999:
             self.text_star.delete(1.0, 2.0)
         else:
             utils.i += 1
-        # if x == 1.0:
-        #     self.text_star.see(END)
         if utils.CheckVar:
             self.text_star.see(END)
 
