@@ -3,20 +3,16 @@ import time
 from tkinter import END
 from tkinter.messagebox import askyesnocancel
 
-from utils import align_right
+import utils
 from room import ChatRoom, KeepAlive, KEEP_ALIVE_INTERVAL_SECONDS
-
-j = 0
-i = 0
 
 
 class Danmu(threading.Thread):
-    def __init__(self, text, text_star, roomid, stars, on, off):
+    def __init__(self, text, text_star, roomid, on, off):
         super(Danmu, self).__init__()
         self.text = text
         self.text_star = text_star
         self._roomid = roomid
-        self.stars = stars
         self.stop = False
         self.on = on
         self.off = off
@@ -47,14 +43,14 @@ class Danmu(threading.Thread):
                         #     _ct = '手机'
                         _uname = msg.attr('nn')
                         _lv = msg.attr('level')
-                        message = align_right('[LV:%s] ' % _lv, 9) + align_right('%s' % _uname, 21) + ':%s' % msg.attr('txt')
-                        if _uname in self.stars:
+                        message = utils.align_right('[LV:%s] ' % _lv, 9) + utils.align_right('%s' % _uname, 21) + ':%s' % msg.attr('txt')
+                        if _uname in utils.stars:
                             self.update_star(message)
                         self.update_danmu(message)
 
                     if msg_type == 'uenter':
                         _uname = msg.attr('nn')
-                        if _uname in self.stars:
+                        if _uname in utils.stars:
                             message = '%s 进入了直播间！' % _uname
                             self.update_star(message)
                     # elif msg_type == 'uenter':
@@ -71,28 +67,29 @@ class Danmu(threading.Thread):
             raise SystemExit
 
     def update_danmu(self, message):
-        global j
-        y = self.text.vbar.get()[1]
+        # y = self.text.vbar.get()[1]
         self.text.insert(END, message + '\n')
-        if j > 2999:
+        if utils.j > 2999:
             self.text.delete(1.0, 2.0)
         else:
-            j += 1
-        if y == 1.0:
+            utils.j += 1
+        # if y == 1.0:
+        #     self.text.see(END)
+        if utils.CheckVar:
             self.text.see(END)
 
     def update_star(self, message):
-        global i
-        x = self.text_star.vbar.get()[1]
+        # x = self.text_star.vbar.get()[1]
         self.text_star.insert(END, message + '\n')
-        if i > 999:
+        if utils.i > 999:
             self.text_star.delete(1.0, 2.0)
         else:
-            i += 1
-        if x == 1.0:
+            utils.i += 1
+        # if x == 1.0:
+        #     self.text_star.see(END)
+        if utils.CheckVar:
             self.text_star.see(END)
 
     def delete_danmu(self):
-        global j
         self.text.delete(1.0, END)
-        j = 0
+        utils.j = 0
