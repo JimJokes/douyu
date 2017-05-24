@@ -39,13 +39,13 @@ def write(msg, file):
             try:
                 a.write(msg + '\n')
             except Exception as e:
-                logging.debug(e)
+                logging.warning(e)
     else:
         with open(file, 'w') as b:
             try:
                 b.write(msg + '\n')
             except Exception as e:
-                logging.debug(e)
+                logging.warning(e)
 
 
 class Client:
@@ -65,8 +65,9 @@ class Client:
                 self.s = socket.create_connection((HOST, PORT))
                 return
             except:
-                time.sleep(0.5)
+                time.sleep(1)
                 continue
+        raise ConnectionError('连接弹幕服务器失败！')
 
     def receive(self):
 
