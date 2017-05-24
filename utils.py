@@ -142,3 +142,10 @@ def align_right(text, width):
         else:
             continue
     return text + ' ' * (width - count)
+
+
+i = 0
+j = 0
+room = None
+stars = []
+CheckVar = True
