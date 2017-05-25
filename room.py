@@ -35,8 +35,6 @@ class KeepAlive(threading.Thread):
 class ChatRoom:
     channel_id = -9999
 
-    # callbacks = {}
-
     def __init__(self, room_id):
         self.room_id = room_id
         self.client = Client()
@@ -44,7 +42,6 @@ class ChatRoom:
 
     def knock(self):
         try:
-            # print('发送登录申请')
             self.client.send({'type': 'loginreq', 'roomid': self.room_id})
         except Exception as e:
             logging.exception(str(e))
@@ -65,7 +62,6 @@ class ChatRoom:
             if msg_type == 'error':
                 print(message.attr('code'))
 
-            # self.trigger_callbacks(msg_type, message)
             yield message
     # todo: 断开连接
     # def cutoff(self):
