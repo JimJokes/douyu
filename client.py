@@ -17,35 +17,35 @@ PORT = 8601
 
 MAX_RECV_SIZE = 4096
 
-msg_type = []
-type_file = os.path.join(os.path.dirname(__file__), 'msgtype')
-data_file = os.path.join(os.path.dirname(__file__), 'datas')
+# msg_type = []
+# type_file = os.path.join(os.path.dirname(__file__), 'msgtype')
+# data_file = os.path.join(os.path.dirname(__file__), 'datas')
 
-if os.path.exists(type_file):
-    pass
-else:
-    with open(type_file, 'w') as q:
-        pass
-
-with open(type_file, 'r') as f:
-    lines = f.readlines()
-    for line in lines:
-        msg_type.append(line.strip())
-
-
-def write(msg, file):
-    if os.path.exists(file):
-        with open(file, 'a') as a:
-            try:
-                a.write(msg + '\n')
-            except Exception as e:
-                logging.warning(e)
-    else:
-        with open(file, 'w') as b:
-            try:
-                b.write(msg + '\n')
-            except Exception as e:
-                logging.warning(e)
+# if os.path.exists(type_file):
+#     pass
+# else:
+#     with open(type_file, 'w') as q:
+#         pass
+#
+# with open(type_file, 'r') as f:
+#     lines = f.readlines()
+#     for line in lines:
+#         msg_type.append(line.strip())
+#
+#
+# def write(msg, file):
+#     if os.path.exists(file):
+#         with open(file, 'a') as a:
+#             try:
+#                 a.write(msg + '\n')
+#             except Exception as e:
+#                 logging.warning(e)
+#     else:
+#         with open(file, 'w') as b:
+#             try:
+#                 b.write(msg + '\n')
+#             except Exception as e:
+#                 logging.warning(e)
 
 
 class Client:
@@ -79,13 +79,13 @@ class Client:
             try:
                 data = self.s.recv(MAX_RECV_SIZE)
             except ConnectionAbortedError as e1:
-                logging.warning(e1)
+                logging.exception(str(e1))
                 self.connect()
                 continue
             except Exception as e:
-                logging.debug(e)
+                logging.exception(str(e))
                 time.sleep(0.5)
-                raise
+                continue
 
             if not data:
                 continue
@@ -103,7 +103,7 @@ class Client:
                 try:
                     self.msg_buff += packet.body.decode('UTF-8')
                 except UnicodeDecodeError as e:
-                    logging.info(e)
+                    # logging.info(e)
                     pass
 
                 while True:
@@ -112,12 +112,12 @@ class Client:
                     if message is None:
                         break
 
-                    msgtype = message.body['type']
-                    if msgtype not in msg_type:
-                        msg_type.append(message.body['type'])
-                        write(msgtype, type_file)
-                    msg_file = os.path.join(data_file, msgtype)
-                    write(self.msg_buff, msg_file)
+                    # msgtype = message.body['type']
+                    # if msgtype not in msg_type:
+                    #     msg_type.append(message.body['type'])
+                    #     write(msgtype, type_file)
+                    # msg_file = os.path.join(data_file, msgtype)
+                    # write(self.msg_buff, msg_file)
 
                     self.msg_buff = self.msg_buff[(message.size() + 1):]
 
