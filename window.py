@@ -77,7 +77,7 @@ class View(tk.Frame):
 
         frame_star_danmu = tk.LabelFrame(self.frame_right, text='关注内容：', padx=10, pady=10)
         frame_star_danmu.place(rely=0.4, relwidth=1, relheight=0.6)
-        self.text_star_danmu = ScrolledText(frame_star_danmu)
+        self.text_star_danmu = ScrolledText(frame_star_danmu, font=font, spacing1=5)
         self.text_star_danmu.place(relwidth=1, relheight=1)
         self.text_star_danmu.bind('<KeyPress>', lambda e: 'break')
 
@@ -107,7 +107,7 @@ class View(tk.Frame):
         if not re.match('\d+', room_id):
             showwarning('直播间ID不正确', '请输入正确的直播间ID！')
         else:
-            self.danmu = Danmu(self.text_damnu, self.text_star_danmu, room_id, self.on, self.off)
+            self.danmu = Danmu(self.text_damnu, self.text_star_danmu, room_id)
             self.danmu.setDaemon(True)
 
             if room_id != utils.room:
@@ -136,7 +136,7 @@ class View(tk.Frame):
         for line in read_text():
             utils.stars.append(line.strip())
             self.text_star.insert(tk.END, line)
-        print(utils.stars)
+        # print(utils.stars)
 
     def write_stars(self):
         text = self.text_star.get(1.0, tk.END)
