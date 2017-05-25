@@ -3,7 +3,7 @@ import os
 import socket
 import threading
 
-logging.basicConfig(filename='error.log', level=logging.DEBUG,
+logging.basicConfig(filename='information.log', level=logging.DEBUG,
                     format='%(asctime)s %(filename)s[line:%(lineno)s] %(levelname)s %(message)s',
                     datefmt='%y-%m-%d %H:%M:%S')
 
@@ -14,6 +14,9 @@ from message import Message
 
 HOST = 'openbarrage.douyutv.com'
 PORT = 8601
+IP = (HOST, PORT)
+
+# test = ('ofijsd', 123)
 
 MAX_RECV_SIZE = 4096
 
@@ -60,14 +63,14 @@ class Client:
         self.s = None
 
     def connect(self):
-        for i in range(5):
+        while True:
             try:
-                self.s = socket.create_connection((HOST, PORT))
+                self.s = socket.create_connection(IP)
                 return
-            except:
+            except Exception as e:
+                logging.warning(e)
                 time.sleep(1)
                 continue
-        raise ConnectionError('连接弹幕服务器失败！')
 
     def receive(self):
 
@@ -78,13 +81,12 @@ class Client:
 
             try:
                 data = self.s.recv(MAX_RECV_SIZE)
-            except ConnectionAbortedError as e1:
-                logging.exception(str(e1))
+            except ConnectionAbortedError or ConnectionResetError as e1:
+                logging.warning(e1)
                 self.connect()
-                continue
             except Exception as e:
                 logging.exception(str(e))
-                time.sleep(0.5)
+                time.sleep(1)
                 continue
 
             if not data:
