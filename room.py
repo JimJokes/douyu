@@ -2,7 +2,7 @@ import logging
 import threading
 import time
 
-logging.basicConfig(filename='error.log', level=logging.DEBUG,
+logging.basicConfig(filename='information.log', level=logging.DEBUG,
                     format='%(asctime)s %(filename)s[line:%(lineno)s] %(levelname)s %(message)s',
                     datefmt='%y-%m-%d %H:%M:%S')
 
@@ -47,7 +47,7 @@ class ChatRoom:
             # print('发送登录申请')
             self.client.send({'type': 'loginreq', 'roomid': self.room_id})
         except Exception as e:
-            logging.debug(e)
+            logging.exception(str(e))
 
         for message in self.client.receive():
 
@@ -61,7 +61,7 @@ class ChatRoom:
                     self.client.send({'type': 'joingroup', 'rid': self.room_id, 'gid': self.channel_id})
                     print('已连接到弹幕服务器，房间id：%s' % self.room_id)
                 except Exception as e:
-                    logging.debug(e)
+                    logging.exception(str(e))
             if msg_type == 'error':
                 print(message.attr('code'))
 
