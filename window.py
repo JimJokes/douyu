@@ -1,14 +1,18 @@
-import os
+import os, sys
 import re
 import tkinter as tk
 from tkinter.messagebox import *
 from tkinter.scrolledtext import *
+from tkinter.font import Font
 
 from dammu import Danmu
 from roomInfo import RoomInfo
 import utils
 
-star_file = os.path.join(os.path.dirname(__file__), 'starList.txt')
+if getattr(sys, 'frozen', False):
+    star_file = os.path.join(os.getcwd(), 'starList.txt')
+else:
+    star_file = os.path.join(os.path.dirname(__file__), 'starList.txt')
 
 
 def read_text():
@@ -36,7 +40,8 @@ class View(tk.Frame):
         frame_left = tk.LabelFrame(text='全部弹幕：', padx=10, pady=10)
         frame_left.place(relwidth=0.5, relheight=1)
 
-        self.text_damnu = ScrolledText(frame_left)
+        font = Font(size=12)
+        self.text_damnu = ScrolledText(frame_left, font=font, spacing1=5)
         self.text_damnu.place(relwidth=1, relheight=1)
         self.text_damnu.bind('<KeyPress>', lambda e: 'break')
 
@@ -48,12 +53,14 @@ class View(tk.Frame):
         self.text_star = ScrolledText(frame_star)
         self.text_star.place(relwidth=0.8, relheight=1)
         self.read_stars()
-        button_star = tk.Button(frame_star, text='确定', command=self.write_stars)
+        button_star = tk.Button(frame_star, text='保存', command=self.write_stars)
         button_star.place(anchor=tk.NE, relx=1, height=22, rely=0)
+        button_refresh = tk.Button(frame_star, text='更新', command=self.read_stars)
+        button_refresh.place(anchor=tk.NE, relx=1, height=22, rely=0.2)
         self.lock_text = tk.StringVar()
         lock = tk.Button(frame_star, textvariable=self.lock_text, command=self.lock)
         self.lock_text.set('锁屏')
-        lock.place(anchor=tk.NE, relx=1, height=22, rely=0.3)
+        lock.place(anchor=tk.SE, relx=1, height=22, rely=1)
 
         frame_id = tk.Frame(self.frame_right, relief=tk.FLAT)
         frame_id.place(relwidth=0.5, relheight=0.1, rely=0.3)
@@ -93,7 +100,7 @@ class View(tk.Frame):
         self.str_5 = self.msg('体重：', 0.5)
         self.str_6 = self.msg('人气：', 0.6)
         self.str_7 = self.msg('上次直播：', 0.7)
-        self.str_8 = self.msg('上次更新：', 0.8)
+        self.str_8 = self.msg('更新时间：', 0.8)
 
     def on(self):
         room_id = self.entry_id.get()
@@ -124,19 +131,20 @@ class View(tk.Frame):
         self.info.start()
 
     def read_stars(self):
+        utils.stars = []
+        self.text_star.delete(1.0, tk.END)
         for line in read_text():
+            utils.stars.append(line.strip())
             self.text_star.insert(tk.END, line)
+        print(utils.stars)
 
     def write_stars(self):
-        utils.stars = []
         text = self.text_star.get(1.0, tk.END)
-        for line in text.split('\n'):
-            if line.strip():
-                utils.stars.append(line.strip())
         with open(star_file, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(utils.stars))
+            for line in text.split('\n'):
+                if line.strip():
+                    f.write(line.strip()+'\n')
             self.text_star_danmu.insert(tk.END, '关注成功！\n')
-        self.text_star.delete(1.0, tk.END)
         self.read_stars()
 
     def msg(self, text, rely, relheight=None):
