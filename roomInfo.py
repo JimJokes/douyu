@@ -47,7 +47,9 @@ class RoomInfo(threading.Thread):
                 for gift in gift_info:
                     self.gifts[gift['id']] = gift['name']
             except Exception as e:
-                logging.warning(e)
+                logging.exception(str(e))
+                time.sleep(1)
+                continue
 
             try:
                 with urllib.request.urlopen(gift_api) as f:
@@ -62,7 +64,9 @@ class RoomInfo(threading.Thread):
                 elif self.status['room_status'] == '1':
                     self.status['room_status'] = '直播中'
             except Exception as e1:
-                logging.warning(e1)
+                logging.exception(str(e1))
+                time.sleep(1)
+                continue
 
             now = time.localtime()
             now_str = time.strftime('%Y-%m-%d %H:%M:%S', now)
