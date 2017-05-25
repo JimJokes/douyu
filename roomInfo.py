@@ -1,6 +1,6 @@
 import json
 import threading, urllib.request, logging
-logging.basicConfig(filename='error.log', level=logging.DEBUG,
+logging.basicConfig(filename='information.log', level=logging.DEBUG,
                     format='%(asctime)s %(filename)s[line:%(lineno)s] %(levelname)s %(message)s',
                     datefmt='%y-%m-%d %H:%M:%S')
 
