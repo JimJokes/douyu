@@ -1,5 +1,4 @@
 import logging
-import os
 import socket
 import threading
 
@@ -19,36 +18,6 @@ IP = (HOST, PORT)
 # test = ('ofijsd', 123)
 
 MAX_RECV_SIZE = 4096
-
-# msg_type = []
-# type_file = os.path.join(os.path.dirname(__file__), 'msgtype')
-# data_file = os.path.join(os.path.dirname(__file__), 'datas')
-
-# if os.path.exists(type_file):
-#     pass
-# else:
-#     with open(type_file, 'w') as q:
-#         pass
-#
-# with open(type_file, 'r') as f:
-#     lines = f.readlines()
-#     for line in lines:
-#         msg_type.append(line.strip())
-#
-#
-# def write(msg, file):
-#     if os.path.exists(file):
-#         with open(file, 'a') as a:
-#             try:
-#                 a.write(msg + '\n')
-#             except Exception as e:
-#                 logging.warning(e)
-#     else:
-#         with open(file, 'w') as b:
-#             try:
-#                 b.write(msg + '\n')
-#             except Exception as e:
-#                 logging.warning(e)
 
 
 class Client:
@@ -113,13 +82,6 @@ class Client:
                     message = Message.sniff(self.msg_buff)
                     if message is None:
                         break
-
-                    # msgtype = message.body['type']
-                    # if msgtype not in msg_type:
-                    #     msg_type.append(message.body['type'])
-                    #     write(msgtype, type_file)
-                    # msg_file = os.path.join(data_file, msgtype)
-                    # write(self.msg_buff, msg_file)
 
                     self.msg_buff = self.msg_buff[(message.size() + 1):]
 
