@@ -48,6 +48,25 @@ class Danmu(threading.Thread):
                         message = '%s 进入了直播间！' % _uname
                         self.update_star(message)
 
+                if msg_type == 'dgb':
+                    _uname = msg.attr('nn')
+                    if _uname in utils.stars:
+                        giftid = msg.attr('gfid')
+                        hit = msg.attr('hits')
+                        if not hit:
+                            hit = 1
+                        if giftid:
+                            try:
+                                gift = utils.gifts[giftid]
+                            except KeyError:
+                                gift = '未知礼物%s' % giftid
+                            message = '%s 送出了 %s, 连击X %s' % (_uname, gift, hit)
+                        else:
+                            lev = msg.attr('lev')
+                            cq = utils.cq[lev]
+                            message = '%s 送出了 %s, 连击X %s' % (_uname, cq, hit)
+                        self.update_star(message)
+
             except KeyError:
                 continue
 
@@ -55,6 +74,7 @@ class Danmu(threading.Thread):
         self.text.insert(END, message + '\n')
         if utils.j > 2999:
             self.text.delete(1.0, 2.0)
+            self.text.update()
         else:
             utils.j += 1
         if utils.CheckVar:
@@ -63,6 +83,7 @@ class Danmu(threading.Thread):
     def update_star(self, message):
         now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
         self.text_star.insert(END, now+'\n'+message + '\n')
+        self.text_star.update()
         if utils.i > 999:
             self.text_star.delete(1.0, 2.0)
         else:
