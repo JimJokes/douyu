@@ -145,6 +145,8 @@ class View(tk.Frame):
                 if line.strip():
                     f.write(line.strip()+'\n')
             self.text_star_danmu.insert(tk.END, '关注成功！\n')
+            if utils.CheckVar:
+                self.text_star_danmu.see(tk.END)
         self.read_stars()
 
     def msg(self, text, rely, relheight=None):
