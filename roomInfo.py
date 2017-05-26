@@ -1,5 +1,8 @@
 import json
 import threading, urllib.request, logging
+from http.client import IncompleteRead
+import utils
+
 logging.basicConfig(filename='information.log', level=logging.DEBUG,
                     format='%(asctime)s %(filename)s[line:%(lineno)s] %(levelname)s %(message)s',
                     datefmt='%y-%m-%d %H:%M:%S')
@@ -25,7 +28,6 @@ class RoomInfo(threading.Thread):
             'fans_num': None,
             'online': None,
         }
-        self.gifts = {}
         self.room_id = room_id
         self.args = args
         self.stop = False
@@ -45,7 +47,10 @@ class RoomInfo(threading.Thread):
                 for k in self.status:
                     self.status[k] = room_info[k]
                 for gift in gift_info:
-                    self.gifts[gift['id']] = gift['name']
+                    utils.gifts[gift['id']] = gift['name']
+            except IncompleteRead:
+                time.sleep(1)
+                continue
             except Exception as e:
                 logging.exception(str(e))
                 time.sleep(1)
@@ -57,12 +62,15 @@ class RoomInfo(threading.Thread):
 
                 gifts_info = json.loads(html)['data']['prop_gift']
                 for gift in gifts_info:
-                    self.gifts[gift['id']] = gift['name']
+                    utils.gifts[gift['id']] = gift['name']
 
                 if self.status['room_status'] == '2':
                     self.status['room_status'] = '下播了'
                 elif self.status['room_status'] == '1':
                     self.status['room_status'] = '直播中'
+            except IncompleteRead:
+                time.sleep(1)
+                continue
             except Exception as e1:
                 logging.exception(str(e1))
                 time.sleep(1)
@@ -81,4 +89,4 @@ class RoomInfo(threading.Thread):
             str_7.set(self.status['start_time'])
             str_8.set(now_str)
 
-            time.sleep(60)
+            time.sleep(30)
