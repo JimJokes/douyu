@@ -6,7 +6,10 @@ logging.basicConfig(filename='information.log', level=logging.DEBUG,
                     format='%(asctime)s %(filename)s[line:%(lineno)s] %(levelname)s %(message)s',
                     datefmt='%y-%m-%d %H:%M:%S')
 
-from client import Client
+try:
+    from testClient import Client
+except ImportError:
+    from client import Client
 
 RAW_BUFF_SIZE = 4096
 KEEP_ALIVE_INTERVAL_SECONDS = 45
