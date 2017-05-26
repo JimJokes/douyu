@@ -74,7 +74,6 @@ class Danmu(threading.Thread):
         self.text.insert(END, message + '\n')
         if utils.j > 2999:
             self.text.delete(1.0, 2.0)
-            self.text.update()
         else:
             utils.j += 1
         if utils.CheckVar:
@@ -83,7 +82,6 @@ class Danmu(threading.Thread):
     def update_star(self, message):
         now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
         self.text_star.insert(END, now+'\n'+message + '\n')
-        self.text_star.update()
         if utils.i > 999:
             self.text_star.delete(1.0, 2.0)
         else:
