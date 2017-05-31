@@ -1,13 +1,14 @@
 import json
-import threading, urllib.request, logging
-from http.client import IncompleteRead
-import utils
-
-logging.basicConfig(filename='information.log', level=logging.DEBUG,
-                    format='%(asctime)s %(filename)s[line:%(lineno)s] %(levelname)s %(message)s',
-                    datefmt='%y-%m-%d %H:%M:%S')
-
 import time
+import threading
+import urllib.request
+from http.client import IncompleteRead
+from urllib.error import URLError
+import html as HTML
+
+import utils
+from logger import Logger
+logger = Logger(__name__)
 
 gift_api = 'https://capi.douyucdn.cn/api/v1/station_effect'
 room_url = 'https://www.douyu.com/196'
@@ -51,8 +52,11 @@ class RoomInfo(threading.Thread):
             except IncompleteRead:
                 time.sleep(1)
                 continue
+            except URLError:
+                time.sleep(1)
+                continue
             except Exception as e:
-                logging.exception(str(e))
+                logger.exception(e)
                 time.sleep(1)
                 continue
 
@@ -71,8 +75,11 @@ class RoomInfo(threading.Thread):
             except IncompleteRead:
                 time.sleep(1)
                 continue
+            except ConnectionResetError:
+                time.sleep(1)
+                continue
             except Exception as e1:
-                logging.exception(str(e1))
+                logger.exception(e1)
                 time.sleep(1)
                 continue
 
@@ -80,7 +87,7 @@ class RoomInfo(threading.Thread):
             now_str = time.strftime('%Y-%m-%d %H:%M:%S', now)
 
             str_1, str_2, str_3, str_4, str_5, str_6, str_7, str_8 = self.args
-            str_1.set(self.status['room_name'])
+            str_1.set(HTML.unescape(self.status['room_name']))
             str_2.set(self.status['owner_name'])
             str_3.set(self.status['room_status'])
             str_4.set(self.status['fans_num'])
