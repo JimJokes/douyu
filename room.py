@@ -1,11 +1,8 @@
-import logging
 import threading
 import time
 
-logging.basicConfig(filename='information.log', level=logging.DEBUG,
-                    format='%(asctime)s %(filename)s[line:%(lineno)s] %(levelname)s %(message)s',
-                    datefmt='%y-%m-%d %H:%M:%S')
-
+from logger import Logger
+logger = Logger(__name__)
 try:
     from testClient import Client
 except ImportError:
@@ -41,13 +38,16 @@ class ChatRoom:
     def __init__(self, room_id):
         self.room_id = room_id
         self.client = Client()
-        self.client.connect()
+
+    def connect(self):
+        for mess in self.client.connect():
+            yield mess
 
     def knock(self):
         try:
             self.client.send({'type': 'loginreq', 'roomid': self.room_id})
         except Exception as e:
-            logging.exception(str(e))
+            logger.exception(e)
 
         for message in self.client.receive():
 
@@ -61,10 +61,12 @@ class ChatRoom:
                     self.client.send({'type': 'joingroup', 'rid': self.room_id, 'gid': self.channel_id})
                     print('已连接到弹幕服务器，房间id：%s' % self.room_id)
                 except Exception as e:
-                    logging.exception(str(e))
+                    logger.exception(e)
             if msg_type == 'error':
                 print(message.attr('code'))
 
             yield message
-    # todo: 断开连接
-    # def cutoff(self):
+
+    def cutoff(self):
+        self.client.send({'type': 'logout'})
+        self.client.disconnect()
