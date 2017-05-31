@@ -1,5 +1,6 @@
 import os, sys
 import re
+import threading
 import tkinter as tk
 from tkinter.messagebox import *
 from tkinter.scrolledtext import *
@@ -9,10 +10,11 @@ from dammu import Danmu
 from roomInfo import RoomInfo
 import utils
 
-if getattr(sys, 'frozen', False):
-    star_file = os.path.join(os.getcwd(), 'starList.txt')
-else:
-    star_file = os.path.join(os.path.dirname(__file__), 'starList.txt')
+# if getattr(sys, 'frozen', False):
+#     star_file = os.path.join(os.getcwd(), 'starList.txt')
+# else:
+#     star_file = os.path.join(os.path.dirname(__file__), 'starList.txt')
+star_file = os.path.abspath('starList.txt')
 
 
 def read_text():
@@ -25,9 +27,9 @@ def read_text():
             return lines
 
 
-def auto_wrap(event, entry):
-    pad = int(str(entry['bd']))
-    entry.configure(wraplength=event.width-pad*2)
+def auto_wrap(event, entity):
+    pad = int(str(entity['bd']))
+    entity.configure(wraplength=event.width - pad * 2)
 
 
 class View(tk.Frame):
@@ -123,6 +125,7 @@ class View(tk.Frame):
         self.info.stop = True
         self.button_start['state'] = tk.NORMAL
         self.button_stop['state'] = tk.DISABLED
+        # print(threading.enumerate())
 
     def update_info(self, room_id):
         string = (self.str_1, self.str_2, self.str_3, self.str_4, self.str_5, self.str_6, self.str_7, self.str_8)
