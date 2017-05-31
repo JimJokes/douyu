@@ -1,5 +1,5 @@
 import threading
-from tkinter import END
+from tkinter import END, TclError
 
 import time
 
@@ -16,18 +16,26 @@ class Danmu(threading.Thread):
         self.stop = False
 
     def run(self):
-        _room = ChatRoom(self._roomid)
-        app = KeepAlive(_room.client, KEEP_ALIVE_INTERVAL_SECONDS)
-        app.setDaemon(True)
-        app.start()
+        self._room = ChatRoom(self._roomid)
+        for mess in self._room.connect():
+            message = '连接弹幕服务器出错，请重新连接！'
+            self.update_danmu(message)
+        self.app = KeepAlive(self._room.client, KEEP_ALIVE_INTERVAL_SECONDS)
+        self.app.setDaemon(True)
+        self.app.start()
 
         self.text.insert(END, '开始监控[%s]的直播间弹幕！\n' % self._roomid)
-        for msg in _room.knock():
+        for msg in self._room.knock():
             if self.stop:
-                app.stop = True
+                self._room.cutoff()
+                self.app.stop = True
                 raise SystemExit
             try:
                 msg_type = msg.attr('type')
+
+                if msg_type == 'error' and msg.attr('code') == '2000':
+                    message = '连接弹幕服务器出错，请重新连接！'
+                    self.update_danmu(message)
 
                 if msg_type == 'chatmsg':
                     # _ct = msg.attr('ct')
@@ -71,23 +79,30 @@ class Danmu(threading.Thread):
                 continue
 
     def update_danmu(self, message):
-        self.text.insert(END, message + '\n')
-        if utils.j > 2999:
-            self.text.delete(1.0, 2.0)
-        else:
-            utils.j += 1
-        if utils.CheckVar:
-            self.text.see(END)
+        try:
+            self.text.insert(END, message + '\n')
+            if utils.j > 2999:
+                self.text.delete(1.0, 2.0)
+            else:
+                utils.j += 1
+            if utils.CheckVar:
+                self.text.see(END)
+        except TclError:
+            # print(message)
+            pass
 
     def update_star(self, message):
-        now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        self.text_star.insert(END, now+'\n'+message + '\n')
-        if utils.i > 999:
-            self.text_star.delete(1.0, 2.0)
-        else:
-            utils.i += 1
-        if utils.CheckVar:
-            self.text_star.see(END)
+        try:
+            now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+            self.text_star.insert(END, now+'\n'+message + '\n')
+            if utils.i > 999:
+                self.text_star.delete(1.0, 2.0)
+            else:
+                utils.i += 1
+            if utils.CheckVar:
+                self.text_star.see(END)
+        except TclError:
+            pass
 
     def delete_danmu(self):
         self.text.delete(1.0, END)
