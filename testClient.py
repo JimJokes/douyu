@@ -1,16 +1,12 @@
-import logging
 import os
 import socket
 import threading
-
-logging.basicConfig(filename='information.log', level=logging.DEBUG,
-                    format='%(asctime)s %(filename)s[line:%(lineno)s] %(levelname)s %(message)s',
-                    datefmt='%y-%m-%d %H:%M:%S')
-
 import time
 
 from packet import Packet
 from message import Message
+from logger import Logger
+logger = Logger(__name__)
 
 HOST = 'openbarrage.douyutv.com'
 PORT = 8601
@@ -20,6 +16,7 @@ IP = (HOST, PORT)
 
 MAX_RECV_SIZE = 4096
 
+# test
 msg_type = []
 type_file = os.path.join(os.path.dirname(__file__), 'msgtype')
 data_file = os.path.join(os.path.dirname(__file__), 'datas')
@@ -42,13 +39,14 @@ def write(msg, file):
             try:
                 a.write(msg + '\n')
             except Exception as e:
-                logging.warning(e)
+                logger.warning(e)
     else:
         with open(file, 'w') as b:
             try:
                 b.write(msg + '\n')
             except Exception as e:
-                logging.warning(e)
+                logger.warning(e)
+# test
 
 
 class Client:
@@ -61,14 +59,21 @@ class Client:
 
     def __init__(self):
         self.s = None
+        self.num = 0
 
     def connect(self):
         while True:
             try:
+                if self.s:
+                    self.s.close()
                 self.s = socket.create_connection(IP)
                 return
             except Exception as e:
-                logging.warning(e)
+                logger.exception(e)
+                self.num += 1
+                if self.num > 300:
+                    yield Message({'type': 'error', 'code': '2000'})
+                    self.num = 0
                 time.sleep(1)
                 continue
 
@@ -82,15 +87,19 @@ class Client:
             try:
                 data = self.s.recv(MAX_RECV_SIZE)
             except ConnectionAbortedError or ConnectionResetError as e1:
-                logging.warning(e1)
-                self.connect()
+                for msg in self.connect():
+                    yield msg
+                continue
             except Exception as e:
-                logging.exception(str(e))
+                logger.exception(e)
                 time.sleep(1)
                 continue
 
             if not data:
                 continue
+
+            if self.num > 0:
+                self.num = 0
 
             self.buff += data
 
@@ -105,7 +114,7 @@ class Client:
                 try:
                     self.msg_buff += packet.body.decode('UTF-8')
                 except UnicodeDecodeError as e:
-                    # logging.info(e)
+                    logger.info(e)
                     pass
 
                 while True:
@@ -114,12 +123,16 @@ class Client:
                     if message is None:
                         break
 
+                    # test
                     msgtype = message.body['type']
-                    if msgtype not in msg_type:
-                        msg_type.append(message.body['type'])
-                        write(msgtype, type_file)
-                    msg_file = os.path.join(data_file, msgtype)
-                    write(self.msg_buff, msg_file)
+                    if msgtype == 'dgb':
+                        if not message.body['gfid']:
+                            # if msgtype not in msg_type:
+                            #     msg_type.append(msgtype)
+                            #     write(msgtype, type_file)
+                            msg_file = os.path.join(data_file, msgtype)
+                            write(self.msg_buff, msg_file)
+                    # test
 
                     self.msg_buff = self.msg_buff[(message.size() + 1):]
 
@@ -131,3 +144,7 @@ class Client:
             self.s.send(Packet(Message(message_body).to_text()).to_raw())
         finally:
             self.send_lock.release()
+
+    def disconnect(self):
+        if self.s:
+            self.s.close()
