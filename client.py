@@ -1,15 +1,11 @@
-import logging
 import socket
 import threading
-
-logging.basicConfig(filename='information.log', level=logging.DEBUG,
-                    format='%(asctime)s %(filename)s[line:%(lineno)s] %(levelname)s %(message)s',
-                    datefmt='%y-%m-%d %H:%M:%S')
-
 import time
 
 from packet import Packet
 from message import Message
+from logger import Logger
+logger = Logger(__name__)
 
 HOST = 'openbarrage.douyutv.com'
 PORT = 8601
@@ -30,14 +26,20 @@ class Client:
 
     def __init__(self):
         self.s = None
+        self.num = 0
 
     def connect(self):
         while True:
             try:
+                self.disconnect()
                 self.s = socket.create_connection(IP)
                 return
             except Exception as e:
-                logging.warning(e)
+                logger.exception(e)
+                self.num += 1
+                if self.num > 300:
+                    yield Message({'type': 'error', 'code': '2000'})
+                    self.num = 0
                 time.sleep(1)
                 continue
 
@@ -51,15 +53,19 @@ class Client:
             try:
                 data = self.s.recv(MAX_RECV_SIZE)
             except ConnectionAbortedError or ConnectionResetError as e1:
-                logging.warning(e1)
-                self.connect()
+                for msg in self.connect():
+                    yield msg
+                continue
             except Exception as e:
-                logging.exception(str(e))
+                logger.exception(e)
                 time.sleep(1)
                 continue
 
             if not data:
                 continue
+
+            if self.num > 0:
+                self.num = 0
 
             self.buff += data
 
@@ -74,7 +80,7 @@ class Client:
                 try:
                     self.msg_buff += packet.body.decode('UTF-8')
                 except UnicodeDecodeError as e:
-                    # logging.info(e)
+                    # logger.info(e)
                     pass
 
                 while True:
@@ -93,3 +99,7 @@ class Client:
             self.s.send(Packet(Message(message_body).to_text()).to_raw())
         finally:
             self.send_lock.release()
+
+    def disconnect(self):
+        if self.s:
+            self.s.close()
