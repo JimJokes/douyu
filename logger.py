@@ -10,7 +10,7 @@ class Logger:
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level)
         trf = TimedRotatingFileHandler(self.log, when='D', interval=1, backupCount=5)
-        formatter = logging.Formatter(fmt='%(name) %(levelname)s %(asctime)s [line:%(lineno)s] %(message)s\n',
+        formatter = logging.Formatter(fmt='%(levelname)s %(asctime)s %(name)s[line:%(lineno)s] %(message)s\n',
                                       datefmt='%y-%m-%d %H:%M:%S')
         trf.setFormatter(formatter)
         self.logger.addHandler(trf)
