@@ -1,6 +1,5 @@
 import os, sys
 import re
-import threading
 import tkinter as tk
 from tkinter.messagebox import *
 from tkinter.scrolledtext import *
@@ -10,11 +9,11 @@ from dammu import Danmu
 from roomInfo import RoomInfo
 import utils
 
-# if getattr(sys, 'frozen', False):
-#     star_file = os.path.join(os.getcwd(), 'starList.txt')
-# else:
-#     star_file = os.path.join(os.path.dirname(__file__), 'starList.txt')
-star_file = os.path.abspath('starList.txt')
+if getattr(sys, 'frozen', False):
+    star_file = os.path.join(os.getcwd(), 'starList.txt')
+else:
+    star_file = os.path.join(os.path.dirname(__file__), 'starList.txt')
+# star_file = os.path.abspath('starList.txt')
 
 
 def read_text():
