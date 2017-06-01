@@ -1,8 +1,6 @@
 from struct import pack, unpack
-import logging
-logging.basicConfig(filename='error.log', level=logging.DEBUG,
-                    format='%(asctime)s %(filename)s[line:%(lineno)s] %(levelname)s %(message)s',
-                    datefmt='%y-%m-%d %H:%M:%S')
+from logger import Logger
+logger = Logger(__name__)
 
 MESSAGE_TYPE_FROM_CLIENT = 689
 MESSAGE_TYPE_FROM_SERVER = 690
@@ -39,7 +37,7 @@ class Packet:
         if packet_length_1 != packet_length_2:
             # print(packet_length_1 + packet_length_2)
             # print(body)
-            logging.info('[Packet] Unmatched packet length fields!')
+            logger.warning('[Packet] Unmatched packet length fields!')
             return None
 
         needed_body_length = packet_length_1 - 8
