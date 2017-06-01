@@ -33,6 +33,9 @@ def deserialize(raw):
     if raw is None or len(raw) <= 0:
         return result
 
+    if raw.find('/') < 0:
+        return raw
+
     kv_pairs = raw.split('/')
     for kv_pair in kv_pairs:
 
@@ -55,11 +58,10 @@ def deserialize(raw):
         #         v = deserialize(v)
         # except ValueError as e:
         #     pass
-        try:
-            if k in ('nl', 'list_level', 'frank'):
-                v = deserialize2(unescape(v))
-        except ValueError:
-            pass
+        if k in ('sui', 'el'):
+            v = deserialize(unescape(v))
+        elif k in ('list_day', 'list_all', 'nl', 'list'):
+            v = deserialize2(unescape(v))
 
         result[k] = v
 
@@ -68,12 +70,14 @@ def deserialize(raw):
 
 def deserialize2(raw):
 
-    result = {}
+    result = []
 
     if raw is None or len(raw) <= 0:
         return result
 
-    i = 1
+    if raw.find('/') < 0:
+        return raw
+
     buffs = raw.split('//')
     for buff in buffs:
 
@@ -103,8 +107,7 @@ def deserialize2(raw):
         if not user:
             continue
 
-        result[i] = user
-        i += 1
+        result.append(user)
 
     return result
 
