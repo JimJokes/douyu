@@ -4,7 +4,7 @@ import time
 from logger import Logger
 logger = Logger(__name__)
 try:
-    from testClient import Client
+    from client_test import Client
 except ImportError:
     from client import Client
 
