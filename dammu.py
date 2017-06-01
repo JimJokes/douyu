@@ -2,9 +2,13 @@ import threading
 from tkinter import END, TclError
 
 import time
+import sys
 
 import utils
 from room import ChatRoom, KeepAlive, KEEP_ALIVE_INTERVAL_SECONDS
+from logger import Logger
+logger = Logger(__name__)
+non_bmp_map = dict.fromkeys(range(0x10000, sys.maxunicode+1), 0xfffd)
 
 
 class Danmu(threading.Thread):
@@ -47,7 +51,8 @@ class Danmu(threading.Thread):
                     _lv = msg.attr('level')
                     message = utils.align_right('[LV:%s] ' % _lv, 9) + utils.align_right('%s' % _uname, 21) + ':%s' % msg.attr('txt')
                     if _uname in utils.stars:
-                        self.update_star(message)
+                        mess = '[LV:%s] %s :%s' % (_lv, _uname, msg.attr('txt'))
+                        self.update_star(mess)
                     self.update_danmu(message)
 
                 if msg_type == 'uenter':
@@ -56,13 +61,11 @@ class Danmu(threading.Thread):
                         message = '%s 进入了直播间！' % _uname
                         self.update_star(message)
 
-                if msg_type == 'dgb':
-                    _uname = msg.attr('nn')
+                if msg_type == 'dgb' or msg_type == 'bc_buy_deserve':
+                    _uname = msg.attr('nn') or msg.attr('sui')['nick']
                     if _uname in utils.stars:
                         giftid = msg.attr('gfid')
-                        hit = msg.attr('hits')
-                        if not hit:
-                            hit = 1
+                        hit = msg.attr('hits') or 1
                         if giftid:
                             try:
                                 gift = utils.gifts[giftid]
@@ -81,28 +84,34 @@ class Danmu(threading.Thread):
     def update_danmu(self, message):
         try:
             self.text.insert(END, message + '\n')
-            if utils.j > 2999:
-                self.text.delete(1.0, 2.0)
-            else:
-                utils.j += 1
-            if utils.CheckVar:
-                self.text.see(END)
         except TclError:
+            self.text.insert(END, message.translate(non_bmp_map)+'\n')
             # print(message)
-            pass
+        except Exception as e:
+            logger.exception(e)
+            return
+        if utils.j > 2999:
+            self.text.delete(1.0, 2.0)
+        else:
+            utils.j += 1
+        if utils.CheckVar:
+            self.text.see(END)
 
     def update_star(self, message):
+        now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
         try:
-            now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-            self.text_star.insert(END, now+'\n'+message + '\n')
-            if utils.i > 999:
-                self.text_star.delete(1.0, 2.0)
-            else:
-                utils.i += 1
-            if utils.CheckVar:
-                self.text_star.see(END)
+            self.text_star.insert(END, now+' '+message + '\n')
         except TclError:
-            pass
+            self.text_star.insert(END, now+' '+message.translate(non_bmp_map)+'\n')
+        except Exception as e:
+            logger.exception(e)
+            return
+        if utils.i > 999:
+            self.text_star.delete(1.0, 2.0)
+        else:
+            utils.i += 1
+        if utils.CheckVar:
+            self.text_star.see(END)
 
     def delete_danmu(self):
         self.text.delete(1.0, END)
