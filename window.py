@@ -31,6 +31,47 @@ def auto_wrap(event, entity):
     entity.configure(wraplength=event.width - pad * 2)
 
 
+class ROSText(ScrolledText):
+    commandsToRemove = (
+        "<Control-Key-h>",
+        "<Meta-Key-Delete>",
+        "<Meta-Key-BackSpace>",
+        "<Meta-Key-d>",
+        "<Meta-Key-b>",
+        "<<Redo>>",
+        "<<Undo>>",
+        "<Control-Key-t>",
+        "<Control-Key-o>",
+        "<Control-Key-k>",
+        "<Control-Key-d>",
+        "<Key>",
+        "<Key-Insert>",
+        "<<PasteSelection>>",
+        "<<Clear>>",
+        "<<Paste>>",
+        "<<Cut>>",
+        "<Key-BackSpace>",
+        "<Key-Delete>",
+        "<Key-Return>",
+        "<Control-Key-i>",
+        "<Key-Tab>",
+        "<Shift-Key-Tab>"
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(ROSText, self).__init__(*args, **kwargs)
+        self._init_tag()
+
+    def _init_tag(self):
+        for key in self.bind_class('Text'):
+            if key not in self.commandsToRemove:
+                command = self.bind_class('Text', key)
+                self.bind_class('ROSText', key, command)
+
+        bind_tags = tuple(tag if tag != 'Text' else 'ROSText' for tag in self.bindtags())
+        self.bindtags(bind_tags)
+
+
 class View(tk.Frame):
     def __init__(self, master=None):
         super(View, self).__init__(master)
@@ -42,9 +83,8 @@ class View(tk.Frame):
         frame_left.place(relwidth=0.5, relheight=1)
 
         font = Font(size=12)
-        self.text_damnu = ScrolledText(frame_left, font=font, spacing1=5)
-        self.text_damnu.place(relwidth=1, relheight=1)
-        self.text_damnu.bind('<KeyPress>', lambda e: 'break')
+        self.text_danmu = ROSText(frame_left, font=font, spacing1=5, insertwidth=0)
+        self.text_danmu.place(relwidth=1, relheight=1)
 
         self.frame_right = tk.Frame(relief=tk.FLAT)
         self.frame_right.place(relwidth=0.5, relheight=1, relx=0.5)
@@ -78,9 +118,8 @@ class View(tk.Frame):
 
         frame_star_danmu = tk.LabelFrame(self.frame_right, text='关注内容：', padx=10, pady=10)
         frame_star_danmu.place(rely=0.4, relwidth=1, relheight=0.6)
-        self.text_star_danmu = ScrolledText(frame_star_danmu, font=font, spacing1=5)
+        self.text_star_danmu = ROSText(frame_star_danmu, font=font, spacing1=5, insertwidth=0)
         self.text_star_danmu.place(relwidth=1, relheight=1)
-        self.text_star_danmu.bind('<KeyPress>', lambda e: 'break')
 
     def lock(self):
         if utils.CheckVar:
@@ -108,7 +147,7 @@ class View(tk.Frame):
         if not re.match('\d+', room_id):
             showwarning('直播间ID不正确', '请输入正确的直播间ID！')
         else:
-            self.danmu = Danmu(self.text_damnu, self.text_star_danmu, room_id)
+            self.danmu = Danmu(self.text_danmu, self.text_star_danmu, room_id)
             self.danmu.setDaemon(True)
 
             if room_id != utils.room:
@@ -146,9 +185,9 @@ class View(tk.Frame):
             for line in text.split('\n'):
                 if line.strip():
                     f.write(line.strip()+'\n')
-            self.text_star_danmu.insert(tk.END, '关注成功！\n')
-            if utils.CheckVar:
-                self.text_star_danmu.see(tk.END)
+        self.text_star_danmu.insert(tk.END, '关注成功！\n')
+        if utils.CheckVar:
+            self.text_star_danmu.see(tk.END)
         self.read_stars()
 
     def msg(self, text, rely, relheight=None):
