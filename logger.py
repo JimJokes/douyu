@@ -29,7 +29,7 @@ class TimedRotating(TimedRotatingFileHandler):
         if not callable(self.rotator):
             if os.path.exists(source):
                 shutil.copy2(source, dest)
-                with open(source, 'a') as f:
+                with open(source, 'w') as f:
                     f.truncate()
         else:
             self.rotator(source, dest)
