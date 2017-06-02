@@ -7,8 +7,8 @@ from urllib.error import URLError
 import html as HTML
 
 import utils
-from logger import Logger
-logger = Logger(__name__)
+import logging
+logger = logging.getLogger('main.'+__name__)
 
 gift_api = 'https://capi.douyucdn.cn/api/v1/station_effect'
 room_url = 'https://www.douyu.com/196'

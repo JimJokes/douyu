@@ -5,8 +5,8 @@ import time
 
 from packet import Packet
 from message import Message
-from logger import Logger
-logger = Logger(__name__)
+import logging
+logger = logging.getLogger('main.'+__name__)
 
 HOST = 'openbarrage.douyutv.com'
 PORT = 8601
@@ -20,6 +20,8 @@ MAX_RECV_SIZE = 4096
 msg_type = []
 type_file = os.path.join(os.path.dirname(__file__), 'msgtype')
 data_file = os.path.join(os.path.dirname(__file__), 'datas')
+if not os.path.exists(data_file):
+    os.makedirs(data_file)
 
 if os.path.exists(type_file):
     pass
@@ -125,13 +127,11 @@ class Client:
 
                     # test
                     msgtype = message.body['type']
-                    if msgtype == 'dgb':
-                        if not message.body['gfid']:
-                            # if msgtype not in msg_type:
-                            #     msg_type.append(msgtype)
-                            #     write(msgtype, type_file)
-                            msg_file = os.path.join(data_file, msgtype)
-                            write(self.msg_buff, msg_file)
+                    if msgtype not in msg_type:
+                        msg_type.append(msgtype)
+                        write(msgtype, type_file)
+                        msg_file = os.path.join(data_file, msgtype)
+                        write(self.msg_buff, msg_file)
                     # test
 
                     self.msg_buff = self.msg_buff[(message.size() + 1):]

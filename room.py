@@ -1,8 +1,8 @@
 import threading
 import time
 
-from logger import Logger
-logger = Logger(__name__)
+import logging
+logger = logging.getLogger('main.'+__name__)
 try:
     from client_test import Client
 except ImportError:
@@ -59,11 +59,11 @@ class ChatRoom:
             if msg_type == 'loginres':
                 try:
                     self.client.send({'type': 'joingroup', 'rid': self.room_id, 'gid': self.channel_id})
-                    print('已连接到弹幕服务器，房间id：%s' % self.room_id)
+                    logger.info('已连接到弹幕服务器，房间id：%s' % self.room_id)
                 except Exception as e:
                     logger.exception(e)
             if msg_type == 'error':
-                print(message.attr('code'))
+                logger.warning('error:'+message.attr('code'))
 
             yield message
 

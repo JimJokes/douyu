@@ -1,6 +1,6 @@
 from struct import pack, unpack
-from logger import Logger
-logger = Logger(__name__)
+import logging
+logger = logging.getLogger('main.'+__name__)
 
 MESSAGE_TYPE_FROM_CLIENT = 689
 MESSAGE_TYPE_FROM_SERVER = 690

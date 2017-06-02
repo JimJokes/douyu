@@ -6,8 +6,8 @@ import sys
 
 import utils
 from room import ChatRoom, KeepAlive, KEEP_ALIVE_INTERVAL_SECONDS
-from logger import Logger
-logger = Logger(__name__)
+import logging
+logger = logging.getLogger('main.'+__name__)
 non_bmp_map = dict.fromkeys(range(0x10000, sys.maxunicode+1), 0xfffd)
 
 

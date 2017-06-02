@@ -4,8 +4,8 @@ import time
 
 from packet import Packet
 from message import Message
-from logger import Logger
-logger = Logger(__name__)
+import logging
+logger = logging.getLogger('main.'+__name__)
 
 HOST = 'openbarrage.douyutv.com'
 PORT = 8601
