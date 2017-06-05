@@ -12,7 +12,7 @@ HOST = 'openbarrage.douyutv.com'
 PORT = 8601
 IP = (HOST, PORT)
 
-# test = ('ofijsd', 123)
+test = ('ofijsd', 123)
 
 MAX_RECV_SIZE = 4096
 
@@ -68,12 +68,12 @@ class Client:
             try:
                 if self.s:
                     self.s.close()
-                self.s = socket.create_connection(IP)
+                self.s = socket.create_connection(test)
                 return
             except Exception as e:
                 logger.exception(e)
                 self.num += 1
-                if self.num > 300:
+                if self.num > 30:
                     yield Message({'type': 'error', 'code': '2000'})
                     self.num = 0
                 time.sleep(1)
@@ -88,7 +88,7 @@ class Client:
 
             try:
                 data = self.s.recv(MAX_RECV_SIZE)
-            except ConnectionAbortedError or ConnectionResetError as e1:
+            except (ConnectionAbortedError, ConnectionResetError, ConnectionRefusedError):
                 for msg in self.connect():
                     yield msg
                 continue
