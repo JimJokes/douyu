@@ -31,6 +31,13 @@ def auto_wrap(event, entity):
     entity.configure(wraplength=event.width - pad * 2)
 
 
+def resize(event, entity1, entity2):
+    width = event.width-450
+    entity1.configure(width=width)
+    height = event.height-250
+    entity2.configure(height=height)
+
+
 class ROSText(ScrolledText):
     commandsToRemove = (
         "<Control-Key-h>",
@@ -79,18 +86,24 @@ class View(tk.Frame):
         self.window()
 
     def window(self):
-        frame_left = tk.LabelFrame(text='全部弹幕：', padx=10, pady=10)
-        frame_left.place(relwidth=0.5, relheight=1)
+        frame = tk.Frame()
+        frame.place(relwidth=1, relheight=1)
+
+        frame_left = tk.LabelFrame(frame, text='全部弹幕：', padx=10, pady=10)
+        frame_left.place(relheight=1)
 
         font = Font(size=12)
         self.text_danmu = ROSText(frame_left, font=font, spacing1=5, insertwidth=0)
         self.text_danmu.place(relwidth=1, relheight=1)
 
-        self.frame_right = tk.Frame(relief=tk.FLAT)
-        self.frame_right.place(relwidth=0.5, relheight=1, relx=0.5)
+        frame_right = tk.Frame(frame)
+        frame_right.place(anchor=tk.NE, width=450, relheight=1, relx=1)
 
-        frame_star = tk.LabelFrame(self.frame_right, text='关注列表：(一行一个ID)', padx=10, pady=10)
-        frame_star.place(relwidth=0.5, relheight=0.3)
+        frame_info = tk.Frame(frame_right)
+        frame_info.place(relwidth=1, height=250)
+
+        frame_star = tk.LabelFrame(frame_info, text='关注列表：(一行一个ID)', padx=10, pady=10)
+        frame_star.place(relwidth=0.5, relheight=0.75)
         self.text_star = ScrolledText(frame_star)
         self.text_star.place(relwidth=0.8, relheight=1)
         self.read_stars()
@@ -103,8 +116,8 @@ class View(tk.Frame):
         self.lock_text.set('锁屏')
         lock.place(anchor=tk.SE, relx=1, height=22, rely=1)
 
-        frame_id = tk.Frame(self.frame_right, relief=tk.FLAT)
-        frame_id.place(relwidth=0.5, relheight=0.1, rely=0.3)
+        frame_id = tk.Frame(frame_info)
+        frame_id.place(relwidth=0.5, relheight=0.25, rely=0.75)
         label = tk.Label(frame_id, text='直播间ID：')
         label.place(anchor=tk.NE, relx=0.5, rely=0.1, height=17, relwidth=0.5)
         self.entry_id = tk.Entry(frame_id)
@@ -114,12 +127,13 @@ class View(tk.Frame):
         self.button_start.place(anchor=tk.NE, relx=0.4, rely=0.6, width=55, height=22)
         self.button_stop = tk.Button(frame_id, text='断开连接', state=tk.DISABLED, command=self.off)
         self.button_stop.place(relx=0.6, rely=0.6, width=55, height=22)
-        self.room_info()
+        self.room_info(frame_info)
 
-        frame_star_danmu = tk.LabelFrame(self.frame_right, text='关注内容：', padx=10, pady=10)
-        frame_star_danmu.place(rely=0.4, relwidth=1, relheight=0.6)
+        frame_star_danmu = tk.LabelFrame(frame_right, text='关注内容：', padx=10, pady=10)
+        frame_star_danmu.place(anchor=tk.SE, rely=1, relx=1, relwidth=1)
         self.text_star_danmu = ROSText(frame_star_danmu, font=font, spacing1=5, insertwidth=0)
         self.text_star_danmu.place(relwidth=1, relheight=1)
+        frame.bind('<Configure>', lambda x: resize(x, frame_left, frame_star_danmu))
 
     def lock(self):
         if utils.CheckVar:
@@ -129,18 +143,19 @@ class View(tk.Frame):
             utils.CheckVar = True
             self.lock_text.set('锁屏')
 
-    def room_info(self):
-        self.frame_info = tk.LabelFrame(self.frame_right, text='主播信息：')
-        self.frame_info.place(relx=0.5, relwidth=0.5, relheight=0.4)
+    def room_info(self, frame):
+        self.frame_info = tk.LabelFrame(frame, text='主播信息：')
+        self.frame_info.place(relx=0.5, relwidth=0.5, relheight=1)
 
-        self.str_1 = self.msg('直播间标题：', 0, relheight=0.2)
-        self.str_2 = self.msg('主播：', 0.2)
-        self.str_3 = self.msg('开播状态：', 0.3)
-        self.str_4 = self.msg('关注：', 0.4)
-        self.str_5 = self.msg('体重：', 0.5)
-        self.str_6 = self.msg('人气：', 0.6)
-        self.str_7 = self.msg('上次直播：', 0.7)
-        self.str_8 = self.msg('更新时间：', 0.8)
+        str_1 = self.msg('直播间标题：', 0, relheight=0.2)
+        str_2 = self.msg('主播：', 0.2)
+        str_3 = self.msg('开播状态：', 0.3)
+        str_4 = self.msg('关注：', 0.4)
+        str_5 = self.msg('体重：', 0.5)
+        str_6 = self.msg('人气：', 0.6)
+        str_7 = self.msg('上次直播：', 0.7)
+        str_8 = self.msg('更新时间：', 0.8)
+        self.string = (str_1, str_2, str_3, str_4, str_5, str_6, str_7, str_8)
 
     def on(self):
         room_id = self.entry_id.get()
@@ -166,8 +181,7 @@ class View(tk.Frame):
         # print(threading.enumerate())
 
     def update_info(self, room_id):
-        string = (self.str_1, self.str_2, self.str_3, self.str_4, self.str_5, self.str_6, self.str_7, self.str_8)
-        self.info = RoomInfo(room_id, *string)
+        self.info = RoomInfo(room_id, *self.string)
         self.info.setDaemon(True)
         self.info.start()
 
