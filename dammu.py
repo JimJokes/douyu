@@ -22,6 +22,10 @@ class Danmu(threading.Thread):
     def run(self):
         self._room = ChatRoom(self._roomid)
         for mess in self._room.connect():
+            if self.stop:
+                self._room.cutoff()
+                self.app.stop = True
+                raise SystemExit
             message = '连接弹幕服务器出错，请重新连接！'
             self.update_danmu(message)
         self.app = KeepAlive(self._room.client, KEEP_ALIVE_INTERVAL_SECONDS)
