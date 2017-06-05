@@ -49,10 +49,7 @@ class RoomInfo(threading.Thread):
                     self.status[k] = room_info[k]
                 for gift in gift_info:
                     utils.gifts[gift['id']] = gift['name']
-            except IncompleteRead:
-                time.sleep(1)
-                continue
-            except URLError:
+            except (IncompleteRead, URLError, ConnectionRefusedError, ConnectionResetError):
                 time.sleep(1)
                 continue
             except Exception as e:
@@ -72,10 +69,7 @@ class RoomInfo(threading.Thread):
                     self.status['room_status'] = '下播了'
                 elif self.status['room_status'] == '1':
                     self.status['room_status'] = '直播中'
-            except IncompleteRead:
-                time.sleep(1)
-                continue
-            except ConnectionResetError:
+            except (IncompleteRead, URLError, ConnectionRefusedError, ConnectionResetError):
                 time.sleep(1)
                 continue
             except Exception as e1:
