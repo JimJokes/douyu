@@ -37,7 +37,7 @@ class Client:
             except Exception as e:
                 logger.exception(e)
                 self.num += 1
-                if self.num > 300:
+                if self.num > 30:
                     yield Message({'type': 'error', 'code': '2000'})
                     self.num = 0
                 time.sleep(1)
@@ -52,7 +52,7 @@ class Client:
 
             try:
                 data = self.s.recv(MAX_RECV_SIZE)
-            except ConnectionAbortedError or ConnectionResetError as e1:
+            except (ConnectionAbortedError, ConnectionResetError, ConnectionRefusedError):
                 for msg in self.connect():
                     yield msg
                 continue
