@@ -65,10 +65,16 @@ class RoomInfo(threading.Thread):
                 for gift in gifts_info:
                     utils.gifts[gift['id']] = gift['name']
 
+                now = time.localtime()
+                now_str = time.strftime('%Y-%m-%d %H:%M:%S', now)
+
                 if self.status['room_status'] == '2':
                     self.status['room_status'] = '下播了'
                 elif self.status['room_status'] == '1':
-                    self.status['room_status'] = '直播中'
+                    start = self.status['start_time']
+                    start = time.strptime(start, '%Y-%m-%d %H:%M')
+                    minute = int((time.mktime(now)-time.mktime(start))/60)
+                    self.status['room_status'] = '直播中(已播%s分钟)' % minute
             except (IncompleteRead, URLError, ConnectionRefusedError, ConnectionResetError):
                 time.sleep(1)
                 continue
@@ -76,9 +82,6 @@ class RoomInfo(threading.Thread):
                 logger.exception(e1)
                 time.sleep(1)
                 continue
-
-            now = time.localtime()
-            now_str = time.strftime('%Y-%m-%d %H:%M:%S', now)
 
             str_1, str_2, str_3, str_4, str_5, str_6, str_7, str_8 = self.args
             str_1.set(HTML.unescape(self.status['room_name']))
