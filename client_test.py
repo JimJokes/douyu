@@ -68,7 +68,7 @@ class Client:
             try:
                 if self.s:
                     self.s.close()
-                self.s = socket.create_connection(test)
+                self.s = socket.create_connection(IP)
                 return
             except Exception as e:
                 logger.exception(e)
