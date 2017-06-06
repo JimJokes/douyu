@@ -23,12 +23,15 @@ class KeepAlive(threading.Thread):
         while True:
             if self.stop:
                 raise SystemExit
-            print('发送心跳验证')
+            # print('发送心跳验证')
             currents_ts = int(time.time())
-            self.client.send({
-                'type': 'keeplive',
-                'tick': currents_ts
-            })
+            try:
+                self.client.send({
+                    'type': 'keeplive',
+                    'tick': currents_ts
+                })
+            except Exception as e:
+                logger.exception(e)
             time.sleep(self.delay)
 
 
