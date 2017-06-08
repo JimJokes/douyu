@@ -33,6 +33,7 @@ class Client:
             try:
                 self.disconnect()
                 self.s = socket.create_connection(IP)
+                self.num = 0
                 return
             except Exception as e:
                 logger.exception(e)
@@ -63,9 +64,6 @@ class Client:
 
             if not data:
                 continue
-
-            if self.num > 0:
-                self.num = 0
 
             self.buff += data
 
