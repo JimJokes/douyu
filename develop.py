@@ -142,7 +142,10 @@ class Popup(tk.Toplevel):
         self.attribute()
         self.alpha = 0
         self.position()
-        self.window()
+        self.configure(bg='gray')
+        frame = tk.Frame(self, bg='white', cursor='hand2', relief=tk.RAISED)
+        frame.pack(fill=tk.BOTH, expand=1, padx=(1, 2), pady=(1, 2))
+        self.window(frame)
 
     def run(self):
         img = self.add_image(self.frame_image)
@@ -163,10 +166,7 @@ class Popup(tk.Toplevel):
         self.overrideredirect(True)
         self.attributes('-alpha', 0)
 
-    def window(self):
-        frame = tk.Frame(self, bg='white', cursor='hand2')
-        frame.place(relheight=1, relwidth=1)
-
+    def window(self, frame):
         self.frame_image = tk.Frame(frame, bg='white', bd=0)
         self.frame_image.place(relheight=1, relwidth=0.3)
         self.canvas = tk.Canvas(self.frame_image, bg='white', bd=0)
@@ -254,25 +254,6 @@ class Popup(tk.Toplevel):
         self.destroy()
 
 
-def a():
-    i = 0
-    while True:
-        if i == 20:
-            return
-        else:
-            yield i
-            i += 1
-            time.sleep(1)
-
-
-def b():
-    for i in a():
-        yield i
-    print('b.end')
-    time.sleep(5)
-
-
 if __name__ == '__main__':
-    for i in b():
-        print(i)
-    print('end')
+    app = View()
+    app.mainloop()
