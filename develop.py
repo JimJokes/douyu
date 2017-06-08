@@ -1,8 +1,12 @@
 import os, io
 import tkinter as tk
+from http.client import IncompleteRead
+import threading
+from tkinter.font import Font
 from tkinter.scrolledtext import ScrolledText
 import struct
 import webbrowser
+from urllib.error import URLError
 from urllib.request import urlopen
 import base64
 import urllib
@@ -52,14 +56,14 @@ class ROSText(ScrolledText):
         self.bindtags(bind_tags)
 
 
-class View(tk.Frame):
+class View(tk.Tk):
 
     def __init__(self, master=None):
         super(View, self).__init__(master)
         self.a = 0.5
         self.b = 0.5
-        self.pack(padx=500, pady=300)
         self.window()
+        self.win = Popup()
 
     def window(self):
         m = tk.PanedWindow()
@@ -99,8 +103,16 @@ class View(tk.Frame):
         a.sash_place(0, 1, int(a.winfo_height()/2))
 
     def popup(self):
-        win = Popup()
-        win.mainloop()
+        url = 'https://rpic.douyucdn.cn/a1706/04/00/196_170604002259.jpg'
+        title = '哦覅放假啊活动我还哦啊hi'
+        live = 123
+        name = '后返回骚的房间啊'
+        self.win.name_text.set(name)
+        self.win.status_text.set('直播中(已播%s分钟)' % live)
+        self.win.title_text.set(title)
+        self.win.image = url
+        self.win.room_id = 196
+        self.after(0, self.win.run)
 
     def position(self, event, entity, index):
         if entity.identify(event.x, event.y) == (0, 'sash'):
@@ -121,23 +133,28 @@ class View(tk.Frame):
             entity.sash_place(0, 1, int(event.height*self.b))
 
 
-class Popup(tk.Tk):
-    def __init__(self, *args, **kwargs):
+class Popup(tk.Toplevel):
+    def __init__(self, image=None, room_id=None, *args, **kwargs):
         super(Popup, self).__init__(*args, **kwargs)
+        self.image = image
+        self.room_id = room_id
         self.imageList = []
         self.attribute()
         self.alpha = 0
         self.position()
         self.window()
+
+    def run(self):
+        img = self.add_image(self.frame_image)
+        height = self.canvas.winfo_height()
+        width = self.canvas.winfo_width()
+        self.canvas.create_image(int(width/2), int(height/2), image=img)
+
         self.fade_in()
         self.leave()
 
     def position(self):
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
-        y = screen_height - 80 - 50
-        x = screen_width - 420
-        self.geometry('%sx%s+%s+%s' % (400, 80, x, y))
+        self.geometry('%sx%s-%s-%s' % (400, 90, 20, 50))
 
     def attribute(self):
         self.resizable(False, False)
@@ -147,33 +164,56 @@ class Popup(tk.Tk):
         self.attributes('-alpha', 0)
 
     def window(self):
-        frame = tk.Frame(self, bg='white')
+        frame = tk.Frame(self, bg='white', cursor='hand2')
         frame.place(relheight=1, relwidth=1)
 
-        img = self.add_image()
-        canvas = tk.Canvas(frame, bg='white')
-        canvas.create_image(75, 40, image=img)
-        canvas.place(relheight=1, relwidth=0.4)
+        self.frame_image = tk.Frame(frame, bg='white', bd=0)
+        self.frame_image.place(relheight=1, relwidth=0.3)
+        self.canvas = tk.Canvas(self.frame_image, bg='white', bd=0)
+        self.canvas.place(relheight=1, relwidth=1)
 
-        title = tk.Label(frame, text='今天不知道干嘛，聊天哈哈哈哈哈', bg='white', anchor=tk.NW)
-        title.place(relheight=0.33, relwidth=0.7, relx=0.4)
-        status = tk.Label(frame, text='直播中', bg='white', anchor=tk.NW)
-        status.place(relheight=0.33, relwidth=0.7, relx=0.4, rely=0.33)
-        name = tk.Label(frame, text='还哦啊浮雕', bg='white', anchor=tk.NW)
-        name.place(relheight=0.33, relwidth=0.7, relx=0.4, rely=0.66)
+        title_font = Font(size=11, family='microsoft yahei')
+        self.title_text = tk.StringVar()
+        title = tk.Label(frame, font=title_font, textvariable=self.title_text,
+                         bg='white', bd=0, justify=tk.LEFT, anchor=tk.W)
+        title.place(relheight=0.5, relwidth=0.7, relx=0.32)
+        self.status_text = tk.StringVar()
+        status = tk.Label(frame, textvariable=self.status_text, bg='white', anchor=tk.W, bd=0)
+        status.place(relheight=0.2, relwidth=0.7, relx=0.32, rely=0.5)
+        self.name_text = tk.StringVar()
+        name = tk.Label(frame, textvariable=self.name_text, bg='white', anchor=tk.W, bd=0, fg='gray')
+        name.place(relheight=0.3, relwidth=0.7, relx=0.32, rely=0.7)
+
+        close = tk.Label(frame, text='X', cursor='arrow', bg='white')
+        close.place(anchor=tk.NE, width=30, height=30, relx=1, rely=0)
 
         frame.bind('<Enter>', self.enter)
         frame.bind('<Leave>', self.leave)
-        frame.bind_all('<Button-1>', self.open_browser)
+        frame.bind('<Button-1>', self.open_browser)
+        self.frame_image.bind('<Button-1>', self.open_browser)
+        self.canvas.bind('<Button-1>', self.open_browser)
+        title.bind('<Button-1>', self.open_browser)
+        status.bind('<Button-1>', self.open_browser)
+        name.bind('<Button-1>', self.open_browser)
+        close.bind('<Button-1>', self.close)
 
-    def add_image(self):
-        url = 'https://rpic.douyucdn.cn/a1706/04/00/196_170604002259.jpg'
-        with urlopen(url) as f:
-            img_bytes = f.read()
+        self.update()
+
+        title.configure(wraplength=title.winfo_width()-45)
+
+    def add_image(self, frame):
+        while True:
+            try:
+                with urllib.request.urlopen(self.image) as f:
+                    img_bytes = f.read()
+                break
+            except (IncompleteRead, URLError, ConnectionRefusedError, ConnectionResetError):
+                time.sleep(1)
+                continue
         img = Image.open(io.BytesIO(img_bytes))
         width = img.width
         height = img.height
-        f = min([150/width, 80/height])
+        f = min(frame.winfo_width()/width, frame.winfo_height()/height)
         width = int(width*f)
         height = int(height*f)
         img = img.resize((width, height), Image.ANTIALIAS)
@@ -187,10 +227,10 @@ class Popup(tk.Tk):
         self.alpha = 1
 
     def leave(self, *args):
-        self.id = self.after(5000, self.fade_out)
+        self.id = self.after(10000, self.fade_out)
 
     def open_browser(self, *args):
-        webbrowser.open('www.baidu.com')
+        webbrowser.open('www.douyu.com/%s' % self.room_id)
 
     def fade_in(self):
         if self.alpha < 1:
@@ -208,8 +248,31 @@ class Popup(tk.Tk):
         else:
             self.attributes('-alpha', 0)
             self.destroy()
-            self.imageList = []
+            # self.imageList = []
+
+    def close(self, *args):
+        self.destroy()
+
+
+def a():
+    i = 0
+    while True:
+        if i == 20:
+            return
+        else:
+            yield i
+            i += 1
+            time.sleep(1)
+
+
+def b():
+    for i in a():
+        yield i
+    print('b.end')
+    time.sleep(5)
+
 
 if __name__ == '__main__':
-    app = Popup()
-    app.mainloop()
+    for i in b():
+        print(i)
+    print('end')
