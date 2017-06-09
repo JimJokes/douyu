@@ -272,7 +272,7 @@ class Popup(tk.Toplevel):
         self.attributes('-alpha', 0)
 
     def window(self):
-        frame = tk.Frame(self, bg='white', cursor='hand2')
+        frame = tk.Frame(self, bg='white', cursor='hand2', relief=tk.RAISED, bd=3)
         frame.place(relheight=1, relwidth=1)
 
         self.frame_image = tk.Frame(frame, bg='white', bd=0)
@@ -284,13 +284,13 @@ class Popup(tk.Toplevel):
         self.title_text = tk.StringVar()
         title = tk.Label(frame, font=title_font, textvariable=self.title_text,
                          bg='white', bd=0, justify=tk.LEFT, anchor=tk.W)
-        title.place(relheight=0.5, relwidth=0.7, relx=0.32)
+        title.place(relheight=0.5, relwidth=0.65, relx=0.32)
         self.status_text = tk.StringVar()
         status = tk.Label(frame, textvariable=self.status_text, bg='white', anchor=tk.W, bd=0)
-        status.place(relheight=0.2, relwidth=0.7, relx=0.32, rely=0.5)
+        status.place(relheight=0.2, relwidth=0.65, relx=0.32, rely=0.5)
         self.name_text = tk.StringVar()
         name = tk.Label(frame, textvariable=self.name_text, bg='white', anchor=tk.W, bd=0, fg='gray')
-        name.place(relheight=0.3, relwidth=0.7, relx=0.32, rely=0.7)
+        name.place(relheight=0.3, relwidth=0.65, relx=0.32, rely=0.7)
 
         close = tk.Label(frame, text='X', cursor='arrow', bg='white')
         close.place(anchor=tk.NE, width=30, height=30, relx=1, rely=0)
@@ -307,7 +307,7 @@ class Popup(tk.Toplevel):
 
         self.update()
 
-        title.configure(wraplength=title.winfo_width()-45)
+        title.configure(wraplength=title.winfo_width()-20)
 
     def add_image(self, frame):
         while True:
