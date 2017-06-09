@@ -15,7 +15,7 @@ room_url = 'https://www.douyu.com/196'
 
 
 class RoomInfo(threading.Thread):
-    def __init__(self, room_id, func, *args):
+    def __init__(self, room_id, win, *args):
         super(RoomInfo, self).__init__()
         self.status = {
             'room_id': None,
@@ -31,7 +31,7 @@ class RoomInfo(threading.Thread):
         }
         self.room_id = room_id
         self.args = args
-        self.func = func
+        self.win = win
         self.stop = False
         self.live = False
 
@@ -44,13 +44,6 @@ class RoomInfo(threading.Thread):
             try:
                 with urllib.request.urlopen(room_api) as f:
                     html = f.read().decode('utf-8')
-
-                room_info = json.loads(html)['data']
-                gift_info = room_info['gift']
-                for k in self.status:
-                    self.status[k] = room_info[k]
-                for gift in gift_info:
-                    utils.gifts[gift['id']] = gift['name']
             except (IncompleteRead, URLError, ConnectionRefusedError, ConnectionResetError):
                 time.sleep(1)
                 continue
@@ -59,30 +52,16 @@ class RoomInfo(threading.Thread):
                 time.sleep(1)
                 continue
 
+            room_info = json.loads(html)['data']
+            gift_info = room_info['gift']
+            for k in self.status:
+                self.status[k] = room_info[k]
+            for gift in gift_info:
+                utils.gifts[gift['id']] = gift['name']
+
             try:
                 with urllib.request.urlopen(gift_api) as f:
                     html = f.read().decode('utf-8')
-
-                gifts_info = json.loads(html)['data']['prop_gift']
-                for gift in gifts_info:
-                    utils.gifts[gift['id']] = gift['name']
-
-                now = time.localtime()
-                now_str = time.strftime('%Y-%m-%d %H:%M:%S', now)
-
-                if self.status['room_status'] == '2':
-                    self.status['room_status'] = '下播了'
-                    if self.live:
-                        self.live = False
-                elif self.status['room_status'] == '1':
-                    start = self.status['start_time']
-                    start = time.strptime(start, '%Y-%m-%d %H:%M')
-                    minute = int((time.mktime(now)-time.mktime(start))/60)
-                    self.status['room_status'] = '直播中(已播%s分钟)' % minute
-                    if not self.live:
-                        self.func(self.status['room_name'], minute, self.status['owner_name'],
-                                  self.status['room_thumb'], self.room_id)
-                        self.live = True
             except (IncompleteRead, URLError, ConnectionRefusedError, ConnectionResetError):
                 time.sleep(1)
                 continue
@@ -91,14 +70,46 @@ class RoomInfo(threading.Thread):
                 time.sleep(1)
                 continue
 
-            str_1, str_2, str_3, str_4, str_5, str_6, str_7, str_8 = self.args
-            str_1.set(unescape(self.status['room_name']))
-            str_2.set(self.status['owner_name'])
-            str_3.set(self.status['room_status'])
-            str_4.set(self.status['fans_num'])
-            str_5.set(self.status['owner_weight'])
-            str_6.set(self.status['online'])
-            str_7.set(self.status['start_time'])
-            str_8.set(now_str)
+            gifts_info = json.loads(html)['data']['prop_gift']
+            for gift in gifts_info:
+                utils.gifts[gift['id']] = gift['name']
+
+            now = time.localtime()
+            now_str = time.strftime('%Y-%m-%d %H:%M:%S', now)
+
+            if self.status['room_status'] == '2':
+                self.status['room_status'] = '下播了'
+                if self.live:
+                    self.live = False
+                self.update_info(now_str)
+            elif self.status['room_status'] == '1':
+                start = self.status['start_time']
+                start = time.strptime(start, '%Y-%m-%d %H:%M')
+                minute = int((time.mktime(now) - time.mktime(start)) / 60)
+                self.status['room_status'] = '直播中(已播%s分钟)' % minute
+                self.update_info(now_str)
+                if not self.live:
+                    self.popup(self.status['room_name'], minute, self.status['owner_name'],
+                               self.status['room_thumb'], self.room_id)
+                    self.live = True
 
             time.sleep(30)
+
+    def update_info(self, now):
+        str_1, str_2, str_3, str_4, str_5, str_6, str_7, str_8 = self.args
+        str_1.set(unescape(self.status['room_name']))
+        str_2.set(self.status['owner_name'])
+        str_3.set(self.status['room_status'])
+        str_4.set(self.status['fans_num'])
+        str_5.set(self.status['owner_weight'])
+        str_6.set(self.status['online'])
+        str_7.set(self.status['start_time'])
+        str_8.set(now)
+
+    def popup(self, title, live, name, image, room_id):
+        self.win.name_text.set(name)
+        self.win.status_text.set('直播中(已播%s分钟)' % live)
+        self.win.title_text.set(title)
+        self.win.image = image
+        self.win.room_id = room_id
+        self.win.pop_up()

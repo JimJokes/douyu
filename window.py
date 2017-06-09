@@ -199,7 +199,7 @@ class View(tk.Tk):
         # print(threading.enumerate())
 
     def update_info(self, room_id):
-        self.info = RoomInfo(room_id, self.popup, *self.string)
+        self.info = RoomInfo(room_id, self.win, *self.string)
         self.info.setDaemon(True)
         self.info.start()
 
@@ -232,14 +232,6 @@ class View(tk.Tk):
         msg.bind('<Configure>', lambda x: auto_wrap(x, msg))
         return string
 
-    def popup(self, title, live, name, image, room_id):
-        self.win.name_text.set(name)
-        self.win.status_text.set('直播中(已播%s分钟)' % live)
-        self.win.title_text.set(title)
-        self.win.image = image
-        self.win.room_id = room_id
-        self.after(0, self.win.run)
-
 
 class Popup(tk.Toplevel):
     def __init__(self, image=None, room_id=None, *args, **kwargs):
@@ -252,7 +244,7 @@ class Popup(tk.Toplevel):
         self.position()
         self.window()
 
-    def run(self):
+    def pop_up(self):
         img = self.add_image(self.frame_image)
         height = self.canvas.winfo_height()
         width = self.canvas.winfo_width()
@@ -335,7 +327,7 @@ class Popup(tk.Toplevel):
         self.alpha = 1
 
     def leave(self, *args):
-        self.id = self.after(10000, self.fade_out)
+        self.id = self.after(8000, self.fade_out)
 
     def open_browser(self, *args):
         webbrowser.open('www.douyu.com/%s' % self.room_id)
@@ -355,8 +347,9 @@ class Popup(tk.Toplevel):
             self.id = self.after(100, self.fade_out)
         else:
             self.attributes('-alpha', 0)
-            self.destroy()
-            # self.imageList = []
+            self.alpha = 0
 
     def close(self, *args):
-        self.destroy()
+        self.attributes('-alpha', 0)
+        self.alpha = 0
+
