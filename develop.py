@@ -104,7 +104,7 @@ class View(tk.Tk):
 
     def popup(self):
         url = 'https://rpic.douyucdn.cn/a1706/04/00/196_170604002259.jpg'
-        title = '哦覅放假啊活动我还哦啊hi'
+        title = '哦覅放假啊活动我还哦啊哈佛天使猴年积分管家婆哇机票'
         live = 123
         name = '后返回骚的房间啊'
         self.win.name_text.set(name)
@@ -142,9 +142,8 @@ class Popup(tk.Toplevel):
         self.attribute()
         self.alpha = 0
         self.position()
-        self.configure(bg='gray')
-        frame = tk.Frame(self, bg='white', cursor='hand2', relief=tk.RAISED)
-        frame.pack(fill=tk.BOTH, expand=1, padx=(1, 2), pady=(1, 2))
+        frame = tk.Frame(self, bg='white', cursor='hand2', relief=tk.RAISED, bd=3)
+        frame.pack(fill=tk.BOTH, expand=1)
         self.window(frame)
 
     def run(self):
@@ -169,20 +168,20 @@ class Popup(tk.Toplevel):
     def window(self, frame):
         self.frame_image = tk.Frame(frame, bg='white', bd=0)
         self.frame_image.place(relheight=1, relwidth=0.3)
-        self.canvas = tk.Canvas(self.frame_image, bg='white', bd=0)
+        self.canvas = tk.Canvas(self.frame_image, bg='white', bd=0, relief=tk.FLAT)
         self.canvas.place(relheight=1, relwidth=1)
 
         title_font = Font(size=11, family='microsoft yahei')
         self.title_text = tk.StringVar()
         title = tk.Label(frame, font=title_font, textvariable=self.title_text,
                          bg='white', bd=0, justify=tk.LEFT, anchor=tk.W)
-        title.place(relheight=0.5, relwidth=0.7, relx=0.32)
+        title.place(relheight=0.5, relwidth=0.65, relx=0.32)
         self.status_text = tk.StringVar()
         status = tk.Label(frame, textvariable=self.status_text, bg='white', anchor=tk.W, bd=0)
-        status.place(relheight=0.2, relwidth=0.7, relx=0.32, rely=0.5)
+        status.place(relheight=0.2, relwidth=0.65, relx=0.32, rely=0.5)
         self.name_text = tk.StringVar()
         name = tk.Label(frame, textvariable=self.name_text, bg='white', anchor=tk.W, bd=0, fg='gray')
-        name.place(relheight=0.3, relwidth=0.7, relx=0.32, rely=0.7)
+        name.place(relheight=0.3, relwidth=0.65, relx=0.32, rely=0.7)
 
         close = tk.Label(frame, text='X', cursor='arrow', bg='white')
         close.place(anchor=tk.NE, width=30, height=30, relx=1, rely=0)
@@ -199,7 +198,7 @@ class Popup(tk.Toplevel):
 
         self.update()
 
-        title.configure(wraplength=title.winfo_width()-45)
+        title.configure(wraplength=title.winfo_width()-20)
 
     def add_image(self, frame):
         while True:
