@@ -80,6 +80,15 @@ class Danmu(threading.Thread):
                             message = '%s 送出了 %s, 连击X %s' % (_uname, cq, hit)
                         self.update_star(message)
 
+                if msg_type == 'spbc':
+                    _uname = msg.attr('sn')
+                    if _uname in utils.stars:
+                        gift = msg.attr('gn')
+                        room_owner = msg.attr('dn')
+                        room_id = msg.attr('drid')
+                        message = '%s 在%s直播间(ID:%s)送出 %s' % (_uname, room_owner, room_id, gift)
+                        self.update_star(message)
+
             except KeyError:
                 continue
 
