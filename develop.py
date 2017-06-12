@@ -1,18 +1,6 @@
-import os, io
 import tkinter as tk
-from http.client import IncompleteRead
-import threading
-from tkinter.font import Font
+from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
-import struct
-import webbrowser
-from urllib.error import URLError
-from urllib.request import urlopen
-import base64
-import urllib
-
-from PIL import ImageTk, Image
-import time
 
 
 class ROSText(ScrolledText):
@@ -56,203 +44,57 @@ class ROSText(ScrolledText):
         self.bindtags(bind_tags)
 
 
-class View(tk.Tk):
-
-    def __init__(self, master=None):
-        super(View, self).__init__(master)
-        self.a = 0.5
-        self.b = 0.5
+class Window(ttk.Frame):
+    def __init__(self, *args, **kwargs):
+        super(Window, self).__init__(*args, **kwargs)
+        self.pack(expand=1, fill=tk.BOTH)
         self.window()
-        self.win = Popup()
 
     def window(self):
-        m = tk.PanedWindow()
+        frame_left = ttk.Frame()
+        frame_left.place(relx=0, rely=0, relheight=1)
+        self.window_left(frame_left)
 
-        left = tk.LabelFrame(m, text='弹幕：', padx=10, pady=10)
-        m.add(left)
+        frame_right = ttk.Frame(width=250)
+        frame_right.grid_propagate(0)
+        frame_right.place(anchor=tk.NE, relx=1, rely=0, relheight=1)
+        self.window_right(frame_right)
+        # self.update()
+        self.bind('<Configure>', lambda x: frame_resize(x, frame_left))
 
-        right = tk.Frame(m)
-        m.add(right)
+    def window_left(self, frame):
+        notebook = ttk.Notebook(frame, padding=(10, 10, 0, 10))
 
-        m.place(relwidth=1, relheight=1)
-        m.bind('<Button1-ButtonRelease>', lambda x: self.position(x, m, 0))
-        m.bind('<Configure>', lambda x: self.resize(x, m, 0))
+        frame_danmaku = ttk.Frame()
+        tree = ttk.Treeview(frame_danmaku, columns=('等级', '昵称', '弹幕'), show='headings')
+        tree.heading('等级', text='等级')
+        tree.heading('昵称', text='昵称')
+        tree.heading('弹幕', text='弹幕')
+        print(tree.column('弹幕'))
+        tree.insert('', tk.END, values=('LV30', '缘总包养的小三', '好大方活啊加大到家啊覅哦hi哦\n啊是的发送机啊hi哦啊三角阀阿海'))
+        tree.place(relheight=1, relwidth=1)
+        notebook.add(frame_danmaku, text='弹幕')
 
-        danmu = ROSText(left, insertwidth=0)
-        danmu.place(relwidth=1, relheight=1)
-        danmu.insert(tk.END, 'ioafoi\nofja\nihfipahiafsifjia\nioafja\nfjioaiofhao')
+        frame_star = ttk.Frame()
+        notebook.add(frame_star, text='关注')
 
-        a = tk.PanedWindow(right, orient=tk.VERTICAL)
+        notebook.place(relheight=1, relwidth=1)
 
-        top = tk.Frame()
-        a.add(top)
-
-        bottom = tk.LabelFrame(text='关注：', padx=10, pady=10)
-        attention = ROSText(bottom, insertwidth=0)
-        attention.place(relwidth=1, relheight=1)
-        a.add(bottom)
-
-        button = tk.Button(top, text='提醒', command=self.popup)
-        button.place(relx=0.5, rely=0.5)
-
-        a.place(relwidth=1, relheight=1)
-        a.bind('<Button1-ButtonRelease>', lambda x: self.position(x, a, 1))
-        a.bind('<Configure>', lambda x: self.resize(x, a, 1))
-        self.update()
-        m.sash_place(0, int(m.winfo_width()/2), 1)
-        a.sash_place(0, 1, int(a.winfo_height()/2))
-
-    def popup(self):
-        url = 'https://rpic.douyucdn.cn/a1706/04/00/196_170604002259.jpg'
-        title = '哦覅放假啊活动我还哦啊哈佛天使猴年积分管家婆哇机票'
-        live = 123
-        name = '后返回骚的房间啊'
-        self.win.name_text.set(name)
-        self.win.status_text.set('直播中(已播%s分钟)' % live)
-        self.win.title_text.set(title)
-        self.win.image = url
-        self.win.room_id = 196
-        self.after(0, self.win.run)
-
-    def position(self, event, entity, index):
-        if entity.identify(event.x, event.y) == (0, 'sash'):
-            if index == 0:
-                self.a = entity.sash_coord(0)[0] / entity.winfo_reqwidth()
-                # print(self.a)
-            elif index == 1:
-                self.b = entity.sash_coord(0)[1] / entity.winfo_reqheight()
-                # print(self.b)
-
-    def resize(self, event, entity, index):
-        # entity = tk.PanedWindow()
-        if index == 0:
-            # print('a:'+str(self.a))
-            entity.sash_place(0, int(event.width*self.a), 1)
-        elif index == 1:
-            # print('b:'+str(self.b))
-            entity.sash_place(0, 1, int(event.height*self.b))
+    def window_right(self, frame):
+        frame_info = ttk.LabelFrame(frame, text='主播信息：', height=250)
+        frame_info.place(relwidth=1)
 
 
-class Popup(tk.Toplevel):
-    def __init__(self, image=None, room_id=None, *args, **kwargs):
-        super(Popup, self).__init__(*args, **kwargs)
-        self.image = image
-        self.room_id = room_id
-        self.imageList = []
-        self.attribute()
-        self.alpha = 0
-        self.position()
-        frame = tk.Frame(self, bg='white', cursor='hand2', relief=tk.RAISED, bd=3)
-        frame.pack(fill=tk.BOTH, expand=1)
-        self.window(frame)
-
-    def run(self):
-        img = self.add_image(self.frame_image)
-        height = self.canvas.winfo_height()
-        width = self.canvas.winfo_width()
-        self.canvas.create_image(int(width/2), int(height/2), image=img)
-
-        self.fade_in()
-        self.leave()
-
-    def position(self):
-        self.geometry('%sx%s-%s-%s' % (400, 90, 20, 50))
-
-    def attribute(self):
-        self.resizable(False, False)
-        self.focusmodel('passive')
-        self.attributes('-topmost', 1)
-        self.overrideredirect(True)
-        self.attributes('-alpha', 0)
-
-    def window(self, frame):
-        self.frame_image = tk.Frame(frame, bg='white', bd=0)
-        self.frame_image.place(relheight=1, relwidth=0.3)
-        self.canvas = tk.Canvas(self.frame_image, bg='white', bd=0, relief=tk.FLAT)
-        self.canvas.place(relheight=1, relwidth=1)
-
-        title_font = Font(size=11, family='microsoft yahei')
-        self.title_text = tk.StringVar()
-        title = tk.Label(frame, font=title_font, textvariable=self.title_text,
-                         bg='white', bd=0, justify=tk.LEFT, anchor=tk.W)
-        title.place(relheight=0.5, relwidth=0.65, relx=0.32)
-        self.status_text = tk.StringVar()
-        status = tk.Label(frame, textvariable=self.status_text, bg='white', anchor=tk.W, bd=0)
-        status.place(relheight=0.2, relwidth=0.65, relx=0.32, rely=0.5)
-        self.name_text = tk.StringVar()
-        name = tk.Label(frame, textvariable=self.name_text, bg='white', anchor=tk.W, bd=0, fg='gray')
-        name.place(relheight=0.3, relwidth=0.65, relx=0.32, rely=0.7)
-
-        close = tk.Label(frame, text='X', cursor='arrow', bg='white')
-        close.place(anchor=tk.NE, width=30, height=30, relx=1, rely=0)
-
-        frame.bind('<Enter>', self.enter)
-        frame.bind('<Leave>', self.leave)
-        frame.bind('<Button-1>', self.open_browser)
-        self.frame_image.bind('<Button-1>', self.open_browser)
-        self.canvas.bind('<Button-1>', self.open_browser)
-        title.bind('<Button-1>', self.open_browser)
-        status.bind('<Button-1>', self.open_browser)
-        name.bind('<Button-1>', self.open_browser)
-        close.bind('<Button-1>', self.close)
-
-        self.update()
-
-        title.configure(wraplength=title.winfo_width()-20)
-
-    def add_image(self, frame):
-        while True:
-            try:
-                with urllib.request.urlopen(self.image) as f:
-                    img_bytes = f.read()
-                break
-            except (IncompleteRead, URLError, ConnectionRefusedError, ConnectionResetError):
-                time.sleep(1)
-                continue
-        img = Image.open(io.BytesIO(img_bytes))
-        width = img.width
-        height = img.height
-        f = min(frame.winfo_width()/width, frame.winfo_height()/height)
-        width = int(width*f)
-        height = int(height*f)
-        img = img.resize((width, height), Image.ANTIALIAS)
-        img = ImageTk.PhotoImage(img)
-        self.imageList.append(img)
-        return img
-
-    def enter(self, *args):
-        self.after_cancel(self.id)
-        self.attributes('-alpha', 1)
-        self.alpha = 1
-
-    def leave(self, *args):
-        self.id = self.after(10000, self.fade_out)
-
-    def open_browser(self, *args):
-        webbrowser.open('www.douyu.com/%s' % self.room_id)
-
-    def fade_in(self):
-        if self.alpha < 1:
-            self.alpha += 0.3
-            self.attributes('-alpha', self.alpha)
-            self.after(100, self.fade_in)
-        else:
-            self.attributes('-alpha', 1)
-
-    def fade_out(self):
-        if self.alpha > 0:
-            self.alpha -= 0.2
-            self.attributes('-alpha', self.alpha)
-            self.id = self.after(100, self.fade_out)
-        else:
-            self.attributes('-alpha', 0)
-            self.destroy()
-            # self.imageList = []
-
-    def close(self, *args):
-        self.destroy()
+def frame_resize(event, frame):
+    frame.configure(width=event.width-250)
 
 
 if __name__ == '__main__':
-    app = View()
-    app.mainloop()
+    app = Window()
+    app.master.geometry('1000x600+300+150')
+    app.master.mainloop()
+    # s = ttk.Style()
+    # b = ttk.Treeview()
+    # print(b.winfo_class())
+    # print(s.element_options('Treeview.label'))
+    # print(s.lookup('Treeview.label', 'background'))
