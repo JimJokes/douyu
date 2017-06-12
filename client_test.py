@@ -66,8 +66,7 @@ class Client:
     def connect(self):
         while True:
             try:
-                if self.s:
-                    self.s.close()
+                self.disconnect()
                 self.s = socket.create_connection(IP)
                 self.num = 0
                 return
@@ -89,7 +88,8 @@ class Client:
 
             try:
                 data = self.s.recv(MAX_RECV_SIZE)
-            except (ConnectionAbortedError, ConnectionResetError, ConnectionRefusedError):
+            except (ConnectionAbortedError, ConnectionResetError, ConnectionRefusedError) as e:
+                logger.warning(e)
                 for msg in self.connect():
                     yield msg
                 continue
