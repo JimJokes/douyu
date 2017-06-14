@@ -53,7 +53,6 @@ class Window(ttk.Frame):
         self.font = Font(family='Microsoft YaHei', size=11)
         self.pack(expand=1, fill=tk.BOTH)
         self.window()
-        self.insert('LV120', 'hiof阿斯加粉丝', '后是哦发件唉哦发窘撒娇地哦撒娇覅噢撒积分iOS叫法')
 
     def window(self):
         frame_left = ttk.Frame()
@@ -71,59 +70,59 @@ class Window(ttk.Frame):
         notebook = ttk.Notebook(frame, padding=(10, 10, 0, 10))
 
         frame_danmaku = ttk.Frame()
-        self.tree_view(frame_danmaku)
+        self.danmaku_tree = self.tree_view(frame_danmaku, ('等级', '昵称', '弹幕'))
+        self.danmaku_tree.column('等级', width=55, stretch=0)
+        self.danmaku_tree.column('昵称', width=180, stretch=0)
+
         notebook.add(frame_danmaku, text='弹幕')
 
         frame_star = ttk.Frame()
-        # self.star_text(frame_star)
+        self.star(frame_star)
         notebook.add(frame_star, text='关注')
 
         notebook.place(relheight=1, relwidth=1)
 
-    def tree_view(self, frame):
+    def star(self, frame):
+        frame_top = ttk.Frame(frame)
+        frame_top.place(relwidth=1, relheight=0.6, rely=0)
 
-        columns = ('等级', '昵称', '弹幕')
-        xbar = ttk.Scrollbar(frame, orient=tk.HORIZONTAL)
-        ybar = ttk.Scrollbar(frame, orient=tk.VERTICAL)
+        text_tree = self.tree_view(frame_top, ('时间', '昵称', '弹幕'))
+        text_tree.column('时间', stretch=0, width=160)
+        text_tree.column('昵称', stretch=0, width=180)
 
-        self.tree = ttk.Treeview(frame, columns=columns, show='headings',
-                                 xscrollcommand=xbar.set, yscrollcommand=ybar.set, style='tree.Treeview')
-        xbar['command'] = self.tree.xview
-        xbar.pack(fill=tk.X, side=tk.BOTTOM)
-        ybar['command'] = self.tree.yview
-        ybar.pack(fill=tk.Y, side=tk.RIGHT)
+        frame_bottom = ttk.Frame(frame)
+        frame_bottom.place(relwidth=1, relheight=0.4, rely=0.6)
 
-        for col in columns:
-            self.tree.heading(col, text=col)
-        self.tree.column('等级', width=55, stretch=0)
-        self.tree.column('昵称', width=180, stretch=0)
-
-        self.tree.pack(fill=tk.BOTH, expand=1)
-
-    # def star_text(self, frame):
-    #     # ybar = ttk.Scrollbar(frame, orient=tk.VERTICAL)
-    #     text = ROSText(frame)
-    #     # ybar['command'] = text.yview
-    #     # ybar.pack(fill=tk.Y, side=tk.RIGHT)
-    #     text.pack(fill=tk.BOTH, expand=1)
+        gift_tree = self.tree_view(frame_bottom, ('昵称', '礼物', '连击'))
+        gift_tree.column('昵称', stretch=0, width=180)
 
     def window_right(self, frame):
         frame_info = ttk.LabelFrame(frame, text='主播信息：', height=250)
         frame_info.place(relwidth=1)
 
-    def insert(self, lv, name, value):
-        col_w = self.tree.column('弹幕', width=None)
-        print(self.wrap_text(col_w, value))
+    def tree_view(self, frame, columns):
+        xbar = ttk.Scrollbar(frame, orient=tk.HORIZONTAL)
+        ybar = ttk.Scrollbar(frame, orient=tk.VERTICAL)
 
-    def wrap_text(self, col_w, value):
-        length = len(value)
+        tree = ttk.Treeview(frame, columns=columns, show='headings',
+                            xscrollcommand=xbar.set, yscrollcommand=ybar.set, style='tree.Treeview')
+        xbar.config(command=tree.xview)
+        xbar.pack(fill=tk.X, side=tk.BOTTOM)
+        ybar.config(command=tree.yview)
+        ybar.pack(fill=tk.Y, side=tk.RIGHT)
+
+        for col in columns:
+            tree.heading(col, text=col)
+
+        tree.pack(fill=tk.BOTH, expand=1)
+        return tree
+
+    def insert(self, lv, name, value):
+        value = value.replace('\n', '')
+        self.danmaku_tree.insert('', tk.END, values=(lv, name, value))
         text_w = self.font.measure(value)
-        while col_w < text_w:
-            length -= 1
-            value = value[0:length]
-            text_w = self.font.measure(value)
-        else:
-            return value
+        if self.danmaku_tree.column('弹幕', width=None) < text_w:
+            self.danmaku_tree.column('弹幕', width=text_w + 10)
 
     def frame_resize(self, event, frame):
         frame.configure(width=event.width - 250)
