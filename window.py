@@ -19,8 +19,10 @@ import utils
 
 if getattr(sys, 'frozen', False):
     star_file = os.path.join(os.getcwd(), 'starList.txt')
+    icon = os.path.join(getattr(sys, '_MEIPASS', '.'), 'icon.ico')
 else:
     star_file = os.path.join(os.path.dirname(__file__), 'starList.txt')
+    icon = os.path.join(os.path.dirname(__file__), 'icon.ico')
 # star_file = os.path.abspath('starList.txt')
 
 
@@ -92,9 +94,13 @@ class View(tk.Tk):
         super(View, self).__init__(*args, **kwargs)
         self.width = width
         self.height = height
+        self.icon()
         self.position()
         self.window()
         self.win = Popup()
+
+    def icon(self):
+        self.iconbitmap(icon)
 
     def position(self):
         screen_width = self.winfo_screenwidth()
