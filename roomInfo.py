@@ -93,7 +93,7 @@ class RoomInfo(threading.Thread):
                                self.status['room_thumb'], self.room_id)
                     self.live = True
 
-            time.sleep(30)
+            time.sleep(10)
 
     def update_info(self, now):
         str_1, str_2, str_3, str_4, str_5, str_6, str_7, str_8 = self.args
