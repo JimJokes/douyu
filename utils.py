@@ -61,14 +61,14 @@ def deserialize(raw):
         if k in ('sui', 'el'):
             v = deserialize(unescape(v))
         elif k in ('list_day', 'list_all', 'nl', 'list'):
-            v = deserialize2(unescape(v))
+            v = __deserialize2(unescape(v))
 
         result[k] = v
 
     return result
 
 
-def deserialize2(raw):
+def __deserialize2(raw):
 
     result = []
 
