@@ -1,77 +1,48 @@
+import os, sys
 import tkinter as tk
 from tkinter import ttk
 from tkinter.font import Font
-from tkinter.scrolledtext import ScrolledText
+from tkinter.messagebox import showerror
+
+import utils
+
+star_file = os.path.join(os.getcwd(), 'starList.txt')
+
+if getattr(sys, 'frozen', False):
+    icon = os.path.join(getattr(sys, '_MEIPASS', '.'), 'icon.ico')
+else:
+    icon = os.path.join(os.path.dirname(__file__), 'icon.ico')
 
 
-class ROSText(ScrolledText):
-    commandsToRemove = (
-        "<Control-Key-h>",
-        "<Meta-Key-Delete>",
-        "<Meta-Key-BackSpace>",
-        "<Meta-Key-d>",
-        "<Meta-Key-b>",
-        "<<Redo>>",
-        "<<Undo>>",
-        "<Control-Key-t>",
-        "<Control-Key-o>",
-        "<Control-Key-k>",
-        "<Control-Key-d>",
-        "<Key>",
-        "<Key-Insert>",
-        "<<PasteSelection>>",
-        "<<Clear>>",
-        "<<Paste>>",
-        "<<Cut>>",
-        "<Key-BackSpace>",
-        "<Key-Delete>",
-        "<Key-Return>",
-        "<Control-Key-i>",
-        "<Key-Tab>",
-        "<Shift-Key-Tab>"
-    )
-
-    def __init__(self, *args, **kwargs):
-        super(ROSText, self).__init__(*args, **kwargs)
-        self._init_tag()
-
-    def _init_tag(self):
-        for key in self.bind_class('Text'):
-            if key not in self.commandsToRemove:
-                command = self.bind_class('Text', key)
-                self.bind_class('ROSText', key, command)
-
-        bind_tags = tuple(tag if tag != 'Text' else 'ROSText' for tag in self.bindtags())
-        self.bindtags(bind_tags)
-
-
-class Window(ttk.Frame):
+class Window(tk.Tk):
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
         self.s = ttk.Style()
         self.s.configure('tree.Treeview', font=('Microsoft YaHei', 11))
         self.font = Font(family='Microsoft YaHei', size=11)
-        self.pack(expand=1, fill=tk.BOTH)
+        self.frame = ttk.Frame()
+        self.frame.pack(expand=1, fill=tk.BOTH)
         self.window()
+        self.read_stars()
 
     def window(self):
-        frame_left = ttk.Frame()
+        frame_left = ttk.Frame(self.frame)
         frame_left.place(relx=0, rely=0, relheight=1)
         self.window_left(frame_left)
 
-        frame_right = ttk.Frame(width=250)
+        frame_right = ttk.Frame(self.frame, width=250)
         frame_right.grid_propagate(0)
         frame_right.place(anchor=tk.NE, relx=1, rely=0, relheight=1)
         self.window_right(frame_right)
         # self.update()
-        self.bind('<Configure>', lambda x: self.frame_resize(x, frame_left, 250, tk.X))
+        self.frame.bind('<Configure>', lambda x: self.frame_resize(x, frame_left, 250, tk.X))
 
     def window_left(self, frame):
-        notebook = ttk.Notebook(frame, padding=(10, 10, 0, 10))
+        notebook = ttk.Notebook(frame, padding=(10, 10, 10, 10))
 
         frame_danmaku = ttk.Frame()
-        danmaku_tree = self.tree_view(frame_danmaku, ('等级', '昵称', '弹幕'), x=1, y=1, style='tree.Treeview')
-        danmaku_tree.column('等级', width=55, stretch=0)
+        danmaku_tree = self.tree_view(frame_danmaku, ('昵称', '弹幕'), x=1, y=1, style='tree.Treeview')
+        # danmaku_tree.column('等级', width=55, stretch=0)
         danmaku_tree.column('昵称', width=180, stretch=0)
 
         notebook.add(frame_danmaku, text='弹幕')
@@ -81,6 +52,11 @@ class Window(ttk.Frame):
         notebook.add(frame_star, text='关注')
 
         notebook.place(relheight=1, relwidth=1)
+
+        self.lock_text = tk.StringVar()
+        lock_button = ttk.Button(frame, textvariable=self.lock_text, width=5, command=self.lock)
+        self.lock_text.set('锁屏')
+        lock_button.place(anchor=tk.NE, y=10, relx=0.9)
 
     def star(self, frame):
         frame_top = ttk.Frame(frame)
@@ -104,22 +80,26 @@ class Window(ttk.Frame):
         self.window_info(frame_top)
 
         frame_mid = ttk.Frame(frame)
-        frame_mid.place(relwidth=1, height=100, y=250)
+        frame_mid.place(relwidth=1, height=80, y=220)
+        self.window_id(frame_mid)
 
         frame_bottom = ttk.Frame(frame)
-        frame_bottom.place(relwidth=1, y=500)
+        frame_bottom.place(relwidth=1, y=300)
+        self.window_star(frame_bottom)
 
-        frame.bind('<Configure>', lambda x: self.frame_resize(x, frame_bottom, 350, tk.Y))
+        frame.bind('<Configure>', lambda x: self.frame_resize(x, frame_bottom, 300, tk.Y))
 
     def window_info(self, frame):
         info_notebook = ttk.Notebook(frame, padding=(0, 10, 10, 0))
-        # frame_info = ttk.Frame()
+
         info_tree = ttk.Treeview(columns=('1', '2'), show='tree')
         info_tree.column('#0', width=0, stretch=0)
         info_tree.column('1', stretch=0, width=80)
         info_tree.column('2', stretch=0, width=154)
+
         info_notebook.add(info_tree, text='主播信息：')
         info_notebook.place(relwidth=1, relheight=1)
+
         info_tree.insert('', tk.END, values=('直播间标题：',))
         info_tree.insert('', tk.END)
         info_tree.insert('', tk.END, values=('主播：',))
@@ -129,6 +109,36 @@ class Window(ttk.Frame):
         info_tree.insert('', tk.END, values=('人气：',))
         info_tree.insert('', tk.END, values=('上次直播：',))
         info_tree.insert('', tk.END, values=('更新时间：',))
+
+    def window_id(self, frame):
+        label = ttk.Label(frame, text='直播间ID：')
+        label.place(anchor=tk.NE, relx=0.5, rely=0.1, height=20, relwidth=0.4)
+
+        self.entry_id = ttk.Entry(frame)
+        self.entry_id.place(relx=0.5, rely=0.1, height=20, relwidth=0.4)
+
+        self.start_button = ttk.Button(frame, text='连接', command=self.on)
+        self.start_button.place(anchor=tk.NE, relx=0.4, rely=0.5, width=60)
+        self.stop_button = ttk.Button(frame, text='断开连接', state=tk.DISABLED, command=self.off)
+        self.stop_button.place(relx=0.6, rely=0.5, width=60)
+
+    def window_star(self, frame):
+        star_notebook = ttk.Notebook(frame, padding=(0, 0, 10, 10))
+
+        frame_star = ttk.Frame()
+        self.stars = tk.Text(frame_star)
+        vbar = ttk.Scrollbar(frame_star, command=self.stars.yview)
+        vbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.stars.config(yscrollcommand=vbar.set)
+        self.stars.pack(fill=tk.BOTH, expand=1)
+
+        star_notebook.add(frame_star, text='关注列表')
+        star_notebook.place(relwidth=1, relheight=1)
+
+        save_button = ttk.Button(frame, text='保存', width=5, command=self.save_stars)
+        save_button.place(anchor=tk.NE, relx=0.6, rely=0)
+        reload_button = ttk.Button(frame, text='更新', width=5)
+        reload_button.place(anchor=tk.NE, relx=0.8, rely=0)
 
     def tree_view(self, frame, columns, x=None, y=None, style='Treeview'):
         tree = ttk.Treeview(frame, columns=columns, show='headings', style=style)
@@ -156,6 +166,46 @@ class Window(ttk.Frame):
                 tree.column(tree.columns[idx], width=text_w + 10)
         tree.insert('', tk.END, values=values)
 
+    def on(self):
+        room_id = self.entry_id.get()
+        if not room_id.isdigit():
+            showerror('直播间ID不正确', '请输入正确的直播间ID！')
+        else:
+            self.start_button.config(state=tk.DISABLED)
+            self.stop_button.config(state=tk.ACTIVE)
+
+    def off(self):
+        self.start_button.config(state=tk.ACTIVE)
+        self.stop_button.config(state=tk.DISABLED)
+
+    def lock(self):
+        if utils.CheckVar:
+            utils.CheckVar = False
+            self.lock_text.set('滚屏')
+        else:
+            utils.CheckVar = True
+            self.lock_text.set('锁屏')
+
+    def read_stars(self):
+        self.stars.delete(1.0, tk.END)
+        if not os.path.exists(star_file):
+            with open(star_file, 'w', encoding='utf-8'):
+                pass
+        else:
+            with open(star_file, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                for line in lines:
+                    utils.stars.append(line.strip())
+                    self.stars.insert(tk.END, line)
+
+    def save_stars(self):
+        text = self.stars.get(1.0, tk.END)
+        with open(star_file, 'w', encoding='utf-8') as f:
+            for star in text.split('\n'):
+                if star.strip():
+                    f.write(star.strip()+'\n')
+        self.read_stars()
+
     def frame_resize(self, event, frame, size, direction):
         if direction == tk.X:
             frame.config(width=event.width - size)
@@ -165,16 +215,5 @@ class Window(ttk.Frame):
 
 if __name__ == '__main__':
     app = Window()
-    app.master.geometry('1000x600+300+150')
-    app.master.mainloop()
-    # root = tk.Tk()
-    # s = ttk.Style()
-    # s.configure('Treeview', font=('Microsoft YaHei', 20), background='red')
-    # tree = ttk.Treeview(columns=('1', '2'), show='tree')
-    # tree.heading('1', text='123')
-    # tree.column('#0', width=0)
-    # print(s.element_options('Treeview.padding'))
-    # print(s.lookup('Treeview.padding', 'padding'))
-    # tree.pack()
-    # tree.insert('', tk.END, values=('123', '123'))
-    # root.mainloop()
+    app.geometry('1000x600+300+150')
+    app.mainloop()
