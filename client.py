@@ -35,6 +35,13 @@ class Client:
                 self.s = socket.create_connection(IP)
                 self.num = 0
                 return
+            except (ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError) as e:
+                self.num += 1
+                if self.num > 30:
+                    yield Message({'type': 'error', 'code': '2000'})
+                    self.num = 0
+                time.sleep(1)
+                continue
             except Exception as e:
                 logger.exception(e)
                 self.num += 1
@@ -54,7 +61,6 @@ class Client:
             try:
                 data = self.s.recv(MAX_RECV_SIZE)
             except (ConnectionAbortedError, ConnectionResetError, ConnectionRefusedError) as e:
-                logger.warning(e)
                 for msg in self.connect():
                     yield msg
                 continue
@@ -92,10 +98,10 @@ class Client:
 
                     yield message
 
-    def send(self, message_body):
+    def send_msg(self, message_body):
         self.send_lock.acquire()
         try:
-            self.s.send(Packet(Message(message_body).to_text()).to_raw())
+            self.s.send_msg(Packet(Message(message_body).to_text()).to_raw())
         finally:
             self.send_lock.release()
 
