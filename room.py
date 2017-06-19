@@ -26,7 +26,7 @@ class KeepAlive(threading.Thread):
             # print('发送心跳验证')
             currents_ts = int(time.time())
             try:
-                self.client.send({
+                self.client.send_msg({
                     'type': 'keeplive',
                     'tick': currents_ts
                 })
@@ -48,7 +48,7 @@ class ChatRoom:
 
     def knock(self):
         try:
-            self.client.send({'type': 'loginreq', 'roomid': self.room_id})
+            self.client.send_msg({'type': 'loginreq', 'roomid': self.room_id})
         except Exception as e:
             logger.exception(e)
 
@@ -61,7 +61,7 @@ class ChatRoom:
 
             if msg_type == 'loginres':
                 try:
-                    self.client.send({'type': 'joingroup', 'rid': self.room_id, 'gid': self.channel_id})
+                    self.client.send_msg({'type': 'joingroup', 'rid': self.room_id, 'gid': self.channel_id})
                     logger.info('已连接到弹幕服务器，房间id：%s' % self.room_id)
                 except Exception as e:
                     logger.exception(e)
@@ -71,5 +71,5 @@ class ChatRoom:
             yield message
 
     def cutoff(self):
-        self.client.send({'type': 'logout'})
+        self.client.send_msg({'type': 'logout'})
         self.client.disconnect()
