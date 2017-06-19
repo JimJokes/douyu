@@ -1,8 +1,12 @@
-import os, sys
+import os
+import sys
 import tkinter as tk
 from tkinter import ttk
 from tkinter.font import Font
-from tkinter.messagebox import showerror
+from tkinter.messagebox import showwarning
+
+import time
+from PIL import Image, ImageTk
 
 import utils
 
@@ -14,9 +18,17 @@ else:
     icon = os.path.join(os.path.dirname(__file__), 'icon.ico')
 
 
+def frame_resize(event, frame, size, direction):
+    if direction == tk.X:
+        frame.config(width=event.width - size)
+    elif direction == tk.Y:
+        frame.config(height=event.height - size)
+
+
 class Window(tk.Tk):
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
+        self.lock_text = tk.StringVar()
         self.s = ttk.Style()
         self.s.configure('tree.Treeview', font=('Microsoft YaHei', 11))
         self.font = Font(family='Microsoft YaHei', size=11)
@@ -35,7 +47,7 @@ class Window(tk.Tk):
         frame_right.place(anchor=tk.NE, relx=1, rely=0, relheight=1)
         self.window_right(frame_right)
         # self.update()
-        self.frame.bind('<Configure>', lambda x: self.frame_resize(x, frame_left, 250, tk.X))
+        self.frame.bind('<Configure>', lambda x: frame_resize(x, frame_left, 250, tk.X))
 
     def window_left(self, frame):
         notebook = ttk.Notebook(frame, padding=(10, 10, 10, 10))
@@ -48,17 +60,16 @@ class Window(tk.Tk):
         notebook.add(frame_danmaku, text='弹幕')
 
         frame_star = ttk.Frame()
-        self.star(frame_star)
+        self.window_star(frame_star)
         notebook.add(frame_star, text='关注')
 
         notebook.place(relheight=1, relwidth=1)
 
-        self.lock_text = tk.StringVar()
         lock_button = ttk.Button(frame, textvariable=self.lock_text, width=5, command=self.lock)
         self.lock_text.set('锁屏')
         lock_button.place(anchor=tk.NE, y=10, relx=0.9)
 
-    def star(self, frame):
+    def window_star(self, frame):
         frame_top = ttk.Frame(frame)
         frame_top.place(relwidth=1, relheight=0.6, rely=0)
 
@@ -85,9 +96,9 @@ class Window(tk.Tk):
 
         frame_bottom = ttk.Frame(frame)
         frame_bottom.place(relwidth=1, y=300)
-        self.window_star(frame_bottom)
+        self.window_star_list(frame_bottom)
 
-        frame.bind('<Configure>', lambda x: self.frame_resize(x, frame_bottom, 300, tk.Y))
+        frame.bind('<Configure>', lambda x: frame_resize(x, frame_bottom, 300, tk.Y))
 
     def window_info(self, frame):
         info_notebook = ttk.Notebook(frame, padding=(0, 10, 10, 0))
@@ -122,7 +133,7 @@ class Window(tk.Tk):
         self.stop_button = ttk.Button(frame, text='断开连接', state=tk.DISABLED, command=self.off)
         self.stop_button.place(relx=0.6, rely=0.5, width=60)
 
-    def window_star(self, frame):
+    def window_star_list(self, frame):
         star_notebook = ttk.Notebook(frame, padding=(0, 0, 10, 10))
 
         frame_star = ttk.Frame()
@@ -169,7 +180,7 @@ class Window(tk.Tk):
     def on(self):
         room_id = self.entry_id.get()
         if not room_id.isdigit():
-            showerror('直播间ID不正确', '请输入正确的直播间ID！')
+            showwarning('直播间ID不正确', '请输入正确的直播间ID！')
         else:
             self.start_button.config(state=tk.DISABLED)
             self.stop_button.config(state=tk.ACTIVE)
@@ -206,14 +217,143 @@ class Window(tk.Tk):
                     f.write(star.strip()+'\n')
         self.read_stars()
 
-    def frame_resize(self, event, frame, size, direction):
-        if direction == tk.X:
-            frame.config(width=event.width - size)
-        elif direction == tk.Y:
-            frame.config(height=event.height - size)
+
+# 弹窗
+class Popup(tk.Toplevel):
+    alpha = 0
+    src = 50
+    des = 50
+    images = []
+
+    def __init__(self, master=None, **kwargs):
+        super(Popup, self).__init__(master=master, **kwargs)
+        self.style()
+        self.attribute()
+        self.move_id = None
+        self.overrideredirect(True)
+
+    def popup(self):
+        self.fade_in()
+        self.after(8000, self.fade_out)
+
+    def move_up(self):
+        self.des = self.des + 100
+        if self.move_id:
+            self.after_cancel(self.move_id)
+        self.move()
+
+    def move(self):
+        if self.src < self.des:
+            self.src += 10
+            self.geometry('%sx%s-%s-%s' % (400, 90, 20, self.src))
+            self.move_id = self.after(10, self.move)
+        else:
+            self.geometry('%sx%s-%s-%s' % (400, 90, 20, self.des))
+            self.src = self.des
+            self.move_id = None
+
+    def attribute(self):
+        self.resizable(False, False)
+        self.attributes('-topmost', 1)
+        self.overrideredirect(True)
+        # self.attributes('-alpha', 0)
+
+    def style(self):
+        s = ttk.Style()
+        s.configure('TFrame', background='white')
+        s.configure('TLabel', background='white', font=('Microsoft YaHei', 10))
+        s.configure('title.TLabel', font=('Microsoft YaHei', 11))
+
+    def fade_in(self):
+        if self.alpha < 1:
+            self.alpha += 0.3
+            self.attributes('-alpha', self.alpha)
+            self.after(100, self.fade_in)
+        else:
+            self.attributes('-alpha', 1)
+
+    def fade_out(self):
+        if self.alpha > 0:
+            self.alpha -= 0.2
+            self.attributes('-alpha', self.alpha)
+            self.id = self.after(100, self.fade_out)
+        else:
+            self.attributes('-alpha', 0)
+            self.alpha = 0
+
+
+# 开播提醒弹窗
+class LivePopup(Popup):
+    def __init__(self, master, **kwargs):
+        super(LivePopup, self).__init__(master=master, **kwargs)
+        self.geometry('%sx%s-%s-%s' % (400, 90, 20, self.src))
+        self.window()
+
+    def window(self):
+        frame = ttk.Frame(self, padding=(0, 5, 0, 5))
+        frame.pack(fill=tk.BOTH, expand=1)
+
+        frame_image = ttk.Frame(frame)
+        frame_image.place(relheight=1, relwidth=0.3)
+        self.window_image(frame_image)
+
+        frame_info = ttk.Frame(frame)
+        frame_info.place(relheight=1, relwidth=0.65, relx=0.32)
+        self.window_info(frame_info)
+
+        close = ttk.Label(self, text='x', anchor=tk.CENTER, width=2)
+        close.place(anchor=tk.NE, relx=1,)
+
+    def window_image(self, frame):
+        img = Image.open('icon.ico')
+        img = ImageTk.PhotoImage(img)
+        self.images.append(img)
+        image = ttk.Label(frame, image=img)
+        image.place(relheight=1, relwidth=1)
+
+    def window_info(self, frame):
+        title = ttk.Label(frame, anchor=tk.W, style='title.TLabel', text='hi的哦啊发及哦啊鸡动发窘', wraplength=240)
+        title.place(relwidth=1, relheight=0.5)
+
+        status = ttk.Label(frame, anchor=tk.W, text='直播中（已播120分钟）')
+        status.place(relwidth=1, relheight=0.25, rely=0.5)
+
+        owner = ttk.Label(frame, anchor=tk.W, text='小缘', foreground='gray')
+        owner.place(relwidth=1, relheight=0.25, rely=0.75)
+
+
+# 关注信息弹窗
+class StarPopup(Popup):
+    def __init__(self, master, **kwargs):
+        super(StarPopup, self).__init__(master=master, **kwargs)
+        self.geometry('%sx%s-%s-%s' % (400, 90, 20, self.src))
+        self.window()
+
+    def window(self):
+        frame = ttk.Frame(self, padding=(0, 10, 0, 10))
+        frame.pack(fill=tk.BOTH, expand=1)
+
+    def move_up(self):
+        self.des = self.des + 100
+        if self.move_id:
+            self.after_cancel(self.move_id)
+        self.move()
 
 
 if __name__ == '__main__':
-    app = Window()
-    app.geometry('1000x600+300+150')
-    app.mainloop()
+    # app = Window()
+    # app.geometry('1000x600+300+150')
+    # app.mainloop()
+    # app = Popup()
+    # app.mainloop()
+    # top = tk.Tk()
+    # s = ttk.Style()
+    # print(s.layout('TLabel'))
+    # print(s.element_options('TLabel.padding'))
+    # print(s.lookup('TLabel.label', 'padding'))
+    # top.destroy()
+    # top.mainloop()
+    top = tk.Tk()
+    app = StarPopup(top)
+    app.move_up()
+    top.mainloop()
