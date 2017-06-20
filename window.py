@@ -11,11 +11,14 @@ from urllib.error import URLError
 
 import time
 
+import logging
 from PIL import ImageTk, Image
 
 from dammu import Danmu
 from roomInfo import RoomInfo
 import utils
+
+logger = logging.getLogger('main.'+__name__)
 
 if getattr(sys, 'frozen', False):
     star_file = os.path.join(os.getcwd(), 'starList.txt')
@@ -316,6 +319,8 @@ class Popup(tk.Toplevel):
             except (IncompleteRead, URLError, ConnectionRefusedError, ConnectionResetError):
                 time.sleep(1)
                 continue
+            except Exception as e1:
+                logger.exception(e1)
         img = Image.open(io.BytesIO(img_bytes))
         width = img.width
         height = img.height
