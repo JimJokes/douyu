@@ -36,20 +36,15 @@ class Client:
                 self.num = 0
                 return
             except (ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError) as e:
-                self.num += 1
-                if self.num > 30:
-                    yield Message({'type': 'error', 'code': '2000'})
-                    self.num = 0
-                time.sleep(1)
-                continue
+                pass
             except Exception as e:
                 logger.exception(e)
-                self.num += 1
-                if self.num > 30:
-                    yield Message({'type': 'error', 'code': '2000'})
-                    self.num = 0
-                time.sleep(1)
-                continue
+            self.num += 1
+            if self.num > 30:
+                yield Message({'type': 'error', 'code': '2000'})
+                self.num = 0
+            time.sleep(1)
+            continue
 
     def receive(self):
 
