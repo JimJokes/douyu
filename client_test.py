@@ -70,8 +70,10 @@ class Client:
                 self.s = socket.create_connection(IP)
                 self.num = 0
                 return
-            except (ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError) as e:
-                pass
+            except (ConnectionRefusedError, ConnectionResetError) as e:
+                logger.warning(e)
+            except ConnectionAbortedError as e:
+                logger.exception(e)
             except Exception as e:
                 logger.exception(e)
             self.num += 1
@@ -147,5 +149,6 @@ class Client:
             self.send_lock.release()
 
     def disconnect(self):
-        if self.s:
+        if self.s is not None:
             self.s.close()
+            self.s = None
