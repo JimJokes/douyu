@@ -1,7 +1,9 @@
+import io
 import webbrowser
 import tkinter as tk
 from tkinter import ttk
 from tkinter.font import Font
+
 from PIL import Image, ImageTk
 
 
@@ -22,22 +24,21 @@ class Popup(tk.Toplevel):
         self.move_id = None
         self.overrideredirect(True)
 
-    def popup(self):
-        self.fade_in()
-        self.after(5000, self.fade_out)
-
+    # 窗口上移
     def move_up(self, distance=90):
-        self.y_des = self.y_des + distance + 10
+        self.y_des = self.y_des + distance + 5
         if self.move_id:
             self.after_cancel(self.move_id)
         self.move_y_up(self.width, self.height, self.x_src)
 
+    # 窗口下移
     def move_down(self, distance=90):
-        self.y_des = self.y_des - distance - 10
+        self.y_des = self.y_des - distance - 5
         if self.move_id:
             self.after_cancel(self.move_id)
         self.move_y_down(self.width, self.height, self.x_src)
 
+    # 窗口下移事件
     def move_y_up(self, width, height, x):
         if self.y_src < self.y_des:
             self.y_src += 10
@@ -48,6 +49,7 @@ class Popup(tk.Toplevel):
             self.y_src = self.y_des
             self.move_id = None
 
+    # 窗口上移事件
     def move_y_down(self, width, height, x):
         if self.y_src > self.y_des:
             self.y_src -= 10
@@ -58,21 +60,25 @@ class Popup(tk.Toplevel):
             self.y_src = self.y_des
             self.move_id = None
 
+    # 窗口定位
     def position(self, width, height, x, y):
         self.geometry('%sx%s-%s-%s' % (width, height, x, y))
 
+    # 窗口状态
     def attribute(self):
         self.resizable(False, False)
         self.attributes('-topmost', 1)
         self.overrideredirect(True)
         self.attributes('-alpha', self.alpha)
 
+    # 窗口风格定义
     def style(self):
         s = ttk.Style()
-        s.configure('TFrame', background='white')
-        s.configure('TLabel', background='white', font=('Microsoft YaHei', 9))
-        s.configure('title.TLabel', font=('Microsoft YaHei', 11))
+        s.configure('white.TFrame', background='white')
+        s.configure('white.TLabel', background='white', font=('Microsoft YaHei', 9))
+        s.configure('title.white.TLabel', font=('Microsoft YaHei', 11))
 
+    # 窗口淡入
     def fade_in(self):
         if self.alpha < 1:
             self.alpha += 0.1
@@ -82,33 +88,41 @@ class Popup(tk.Toplevel):
             self.alpha = 1
             self.attributes('-alpha', self.alpha)
 
+    # 窗口淡出
     def fade_out(self):
         if self.alpha > 0:
             self.alpha -= 0.1
             self.attributes('-alpha', self.alpha)
-            self.id = self.after(30, self.fade_out)
+            self.after(30, self.fade_out)
         else:
             self.alpha = 0
             self.attributes('-alpha', self.alpha)
-            self.id = None
+            self.images.clear()
+            self.destroy()
 
 
 # 开播提醒弹窗
 class LivePopup(Popup):
-    def __init__(self, master=None, **kwargs):
+    def __init__(self, room, image, title, status, name, master=None, **kwargs):
         super(LivePopup, self).__init__(master=master, **kwargs)
-        self.position(self.width, self.height, self.x_src, self.y_src)
+        self.room = room
+        self.image = image
+        self.title = title.strip()
+        self.status = status.strip()
+        self.name = name.strip()
         self.window()
+        self.position(self.width, self.height, self.x_src, self.y_src)
 
+    # 基础窗口
     def window(self):
-        frame = ttk.Frame(self, padding=(2, 10, 2, 10), cursor='hand2', relief=tk.RAISED)
+        frame = ttk.Frame(self, padding=(2, 10, 2, 10), cursor='hand2', relief=tk.RAISED, style='white.TFrame')
         frame.pack(fill=tk.BOTH, expand=1)
 
-        frame_image = ttk.Frame(frame)
+        frame_image = ttk.Frame(frame, style='white.TFrame')
         frame_image.place(relheight=1, relwidth=0.3)
         self.window_image(frame_image)
 
-        frame_info = ttk.Frame(frame)
+        frame_info = ttk.Frame(frame, style='white.TFrame')
         frame_info.place(relheight=1, relwidth=0.65, relx=0.32)
         self.window_info(frame_info)
 
@@ -117,53 +131,125 @@ class LivePopup(Popup):
 
         self.bind_event((frame, frame_info, frame_image))
 
+    # 图片窗口
     def window_image(self, frame):
-        img = Image.open('icon.ico')
+        self.lebel_image = ttk.Label(frame, style='white.TLabel')
+        self.lebel_image.place(relheight=1, relwidth=1)
+
+        self.bind_event((self.lebel_image, ))
+
+    # 添加图片
+    def add_image(self):
+        img = Image.open(self.image)
+        width = img.width
+        height = img.height
+        f = min(self.lebel_image.winfo_width() / width, self.lebel_image.winfo_height() / height)
+        width = int(width * f)
+        height = int(height * f)
+        img = img.resize((width, height), Image.ANTIALIAS)
         img = ImageTk.PhotoImage(img)
         self.images.append(img)
-        image = ttk.Label(frame, image=img)
-        image.place(relheight=1, relwidth=1)
+        self.lebel_image.config(image=img)
 
-        self.bind_event((image, ))
+    # 重写淡入事件，淡入前插入图片
+    def fade_in(self):
+        self.add_image()
+        if self.alpha < 1:
+            self.alpha += 0.1
+            self.attributes('-alpha', self.alpha)
+            self.after(30, self.fade_in)
+        else:
+            self.alpha = 1
+            self.attributes('-alpha', self.alpha)
 
+    # 信息窗口
     def window_info(self, frame):
-        title = ttk.Label(frame, anchor=tk.W, style='title.TLabel', text='hi的哦啊发及哦啊鸡动发窘', wraplength=240)
+        title = ttk.Label(frame, anchor=tk.W, style='title.white.TLabel', text=self.title, wraplength=240)
         title.place(relwidth=1, relheight=0.5)
 
-        status = ttk.Label(frame, anchor=tk.W, text='直播中（已播120分钟）')
+        status = ttk.Label(frame, anchor=tk.W, text=self.status, style='white.TLabel')
         status.place(relwidth=1, relheight=0.25, rely=0.5)
 
-        owner = ttk.Label(frame, anchor=tk.W, text='小缘', foreground='gray')
+        owner = ttk.Label(frame, anchor=tk.W, text=self.name, foreground='gray', style='white.TLabel')
         owner.place(relwidth=1, relheight=0.25, rely=0.75)
 
         self.bind_event((title, status, owner))
 
+    # 点击事件绑定
     def bind_event(self, frames):
         for frame in frames:
             frame.bind('<Button-1>', self.open_browser)
 
+    # 打开浏览器事件
     def open_browser(self, *args):
-        webbrowser.open('www.baidu.com')
+        webbrowser.open('www.douyu.com/%s' % self.room)
 
 
 # 关注信息弹窗
 class StarPopup(Popup):
-    def __init__(self, master=None, **kwargs):
+    def __init__(self, room, name, text, hit=None, master=None, **kwargs):
         super(StarPopup, self).__init__(master=master, **kwargs)
-        self.height = 60
-        self.font = Font(family='Microsoft YaHei', size=11)
-        self.position(self.width, self.height, self.x_src, self.y_src)
+        self.hit_str = tk.StringVar()
+        self.font = Font(family='Microsoft YaHei', size=11, weight='bold')
+        self.room = '[%s]' % room
+        self.name = '%s' % name.strip()
+        self.text = text.strip()
+        self.hit = hit
+        self.height = 50
         self.window()
+        self.position(self.width, self.height, self.x_src, self.y_src)
 
+    # 基础窗口
     def window(self):
-        frame = ttk.Frame(self, padding=(5, 2, 5, 2), relief=tk.RAISED)
+        frame = ttk.Frame(self, padding=(5, 2, 5, 2), relief=tk.RAISED, style='white.TFrame')
         frame.pack(fill=tk.BOTH, expand=1)
 
-        # title = ttk.Label(frame, text='[15256815]关注', style='title.TLabel', wraplength=70)
-        # title.place(relwidth=0.2, relheight=1)
+        text_name = '%s\n%s' % (self.room, self.name)
+        left, right = self.resize_width()
 
-        name = ttk.Label(frame, text='小缘的异次元大包子：', style='title.TLabel')
-        name.place(relwidth=0.4, relheight=1)
+        label_name = ttk.Label(frame, text=text_name, style='title.white.TLabel', justify=tk.CENTER)
+        label_name.place(width=left, relheight=1)
 
-        text = ttk.Label(frame, text='asdfghjklqwertyuiopzxcvbnm123456789', style='title.TLabel', wraplength=230)
-        text.place(relwidth=0.6, relheight=1, relx=0.4)
+        label_text = ttk.Label(frame, text=self.text, style='title.white.TLabel', wraplength=right)
+        label_text.place(width=right, relheight=1, x=left)
+
+        if self.hit is not None:
+            width = 390-left-right
+            self.label_num = tk.Label(frame, textvariable=self.hit_str, anchor=tk.W, font=self.font, bg='white', fg='red')
+            self.label_num.place(width=width, relheight=1, x=left+right)
+            self.change_text(self.hit)
+
+    # 窗口宽度定义
+    def resize_width(self):
+        font = Font(family='Microsoft YaHei', size=11)
+        room_width = font.measure(self.room)
+        name_width = font.measure(self.name)
+
+        left_width = max(room_width, name_width)+10
+        if self.hit is not None:
+            right_width = font.measure(self.text)+5
+        else:
+            right_width = 390 - left_width
+        return left_width, right_width
+
+    # 动态改变文字
+    def change_text(self, value):
+        size = 11
+        self.hit_str.set(value)
+        self.change_font_up(size)
+
+    # 文字变大事件
+    def change_font_up(self, size):
+        if size < 25:
+            size += 2
+            self.label_num.config(font=Font(family='Microsoft YaHei', size=size))
+            self.after(10, self.change_font_up, size)
+        else:
+            self.after(10, self.change_font_down, size)
+
+    # 文字变小事件
+    def change_font_down(self, size):
+        if size > 11:
+            size -= 2
+            self.label_num.config(font=Font(family='Microsoft YaHei', size=size))
+            self.after(10, self.change_font_down, size)
