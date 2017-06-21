@@ -16,6 +16,7 @@ else:
     icon = os.path.join(os.getcwd(), 'icon.ico')
 
 
+# 自动窗口缩放事件
 def frame_resize(event, frame, size, direction):
     if direction == tk.X:
         frame.config(width=event.width - size)
@@ -25,31 +26,39 @@ def frame_resize(event, frame, size, direction):
 
 class Window(tk.Tk):
     popups = []
+    gift_popups = {}
+    out_id = None
 
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
         self.lock_text = tk.StringVar()
-        self.s = ttk.Style()
-        self.s.configure('tree.Treeview', font=('Microsoft YaHei', 11))
+        self.style()
         self.font = Font(family='Microsoft YaHei', size=11)
         self.window()
         self.read_stars()
 
-    def window(self):
-        self.frame = ttk.Frame()
-        self.frame.pack(expand=1, fill=tk.BOTH)
+    # 窗口风格定义
+    def style(self):
+        s = ttk.Style()
+        s.configure('tree.Treeview', font=('Microsoft YaHei', 11))
 
-        frame_left = ttk.Frame(self.frame)
+    # 基础窗口
+    def window(self):
+        frame = ttk.Frame()
+        frame.pack(expand=1, fill=tk.BOTH)
+
+        frame_left = ttk.Frame(frame)
         frame_left.place(relx=0, rely=0, relheight=1)
         self.window_left(frame_left)
 
-        frame_right = ttk.Frame(self.frame, width=250)
+        frame_right = ttk.Frame(frame, width=250)
         frame_right.grid_propagate(0)
         frame_right.place(anchor=tk.NE, relx=1, rely=0, relheight=1)
         self.window_right(frame_right)
         # self.update()
-        self.frame.bind('<Configure>', lambda x: frame_resize(x, frame_left, 250, tk.X))
+        frame.bind('<Configure>', lambda x: frame_resize(x, frame_left, 250, tk.X))
 
+    # 左侧弹幕和关注基础窗口
     def window_left(self, frame):
         notebook = ttk.Notebook(frame, padding=(10, 10, 10, 10))
 
@@ -70,6 +79,7 @@ class Window(tk.Tk):
         self.lock_text.set('锁屏')
         lock_button.place(anchor=tk.NE, y=10, relx=0.9)
 
+    # 左侧关注窗口
     def window_star(self, frame):
         frame_top = ttk.Frame(frame)
         frame_top.place(relwidth=1, relheight=0.6, rely=0)
@@ -86,6 +96,7 @@ class Window(tk.Tk):
         gift_tree.column('昵称', stretch=0, width=180)
         gift_tree.column('连击', stretch=0, width=50)
 
+    # 右侧基础窗口
     def window_right(self, frame):
         frame_top = ttk.Frame(frame)
         frame_top.place(relwidth=1, height=220, rely=0)
@@ -101,6 +112,7 @@ class Window(tk.Tk):
 
         frame.bind('<Configure>', lambda x: frame_resize(x, frame_bottom, 300, tk.Y))
 
+    # 主播信息窗口
     def window_info(self, frame):
         info_notebook = ttk.Notebook(frame, padding=(0, 10, 10, 0))
 
@@ -122,6 +134,7 @@ class Window(tk.Tk):
         info_tree.insert('', tk.END, values=('上次直播：',))
         info_tree.insert('', tk.END, values=('更新时间：',))
 
+    # 直播间ID输入窗口
     def window_id(self, frame):
         label = ttk.Label(frame, text='直播间ID：')
         label.place(anchor=tk.NE, relx=0.5, rely=0.1, height=20, relwidth=0.4)
@@ -134,6 +147,7 @@ class Window(tk.Tk):
         self.stop_button = ttk.Button(frame, text='断开连接', state=tk.DISABLED, command=self.off)
         self.stop_button.place(relx=0.6, rely=0.5, width=60)
 
+    # 关注列表设置窗口
     def window_star_list(self, frame):
         star_notebook = ttk.Notebook(frame, padding=(0, 0, 10, 10))
 
@@ -152,6 +166,7 @@ class Window(tk.Tk):
         reload_button = ttk.Button(frame, text='更新', width=5, command=self.star_popup)
         reload_button.place(anchor=tk.NE, relx=0.8, rely=0)
 
+    # 表格视图创建
     def tree_view(self, frame, columns, x=None, y=None, style='Treeview'):
         tree = ttk.Treeview(frame, columns=columns, show='headings', style=style)
         tree.columns = columns
@@ -170,6 +185,7 @@ class Window(tk.Tk):
         tree.pack(fill=tk.BOTH, expand=1)
         return tree
 
+    # 表格插入并按文字长度调整格宽
     def insert(self, tree, values):
         for idx, value in enumerate(values):
             value = value.replace('\n', '')
@@ -178,6 +194,7 @@ class Window(tk.Tk):
                 tree.column(tree.columns[idx], width=text_w + 10)
         tree.insert('', tk.END, values=values)
 
+    # 开始连接事件
     def on(self):
         room_id = self.entry_id.get()
         if not room_id.isdigit():
@@ -186,10 +203,12 @@ class Window(tk.Tk):
             self.start_button.config(state=tk.DISABLED)
             self.stop_button.config(state=tk.ACTIVE)
 
+    # 断开连接事件
     def off(self):
         self.start_button.config(state=tk.ACTIVE)
         self.stop_button.config(state=tk.DISABLED)
 
+    # 滚屏锁屏事件
     def lock(self):
         if utils.CheckVar:
             utils.CheckVar = False
@@ -198,6 +217,7 @@ class Window(tk.Tk):
             utils.CheckVar = True
             self.lock_text.set('锁屏')
 
+    # 从文件读取关注列表
     def read_stars(self):
         self.stars.delete(1.0, tk.END)
         if not os.path.exists(star_file):
@@ -210,6 +230,7 @@ class Window(tk.Tk):
                     utils.stars.append(line.strip())
                     self.stars.insert(tk.END, line)
 
+    # 把关注列表存入文件
     def save_stars(self):
         text = self.stars.get(1.0, tk.END)
         with open(star_file, 'w', encoding='utf-8') as f:
@@ -218,29 +239,53 @@ class Window(tk.Tk):
                     f.write(star.strip()+'\n')
         self.read_stars()
 
+    # 开播提醒弹出窗口
     def live_popup(self):
-        popup = LivePopup()
+        popup = LivePopup(123324, 'icon.ico', '和覅哦啊集散地of就阿斯蒂芬', '直播中（已播120分钟）', '小缘')
         for win in self.popups:
             win.move_up(popup.height)
         popup.fade_in()
-        self.after(5000, self.fade_out, popup)
         self.popups.append(popup)
+        self.after(5000, self.fade_out, popup)
 
+    # 关注提醒弹出窗口
     def star_popup(self):
-        popup = StarPopup()
-        for win in self.popups:
-            win.move_up(popup.height)
-        popup.fade_in()
-        self.after(5000, self.fade_out, popup)
-        self.popups.append(popup)
+        name = 'ojdfioajfd'
+        gift_id = ''
+        hit = '5'
+        if gift_id is not '':
+            gift_str = name+gift_id
+            if gift_str in self.gift_popups.keys():
+                popup = self.gift_popups[gift_str]
+                popup.change_text(hit)
+                self.after_cancel(self.out_id)
+                self.out_id = self.after(8000, self.fade_out, popup, gift_str)
+            else:
+                popup = StarPopup(12321, name, '送出礼物 爱心火箭 连击X ', hit=hit)
+                for win in self.popups:
+                    win.move_up(popup.height)
+                popup.fade_in()
+                self.popups.append(popup)
+                self.gift_popups[gift_str] = popup
+                self.out_id = self.after(8000, self.fade_out, popup, gift_str)
+        else:
+            popup = StarPopup(12321, name, '送出礼物 爱心火箭 连击X ')
+            for win in self.popups:
+                win.move_up(popup.height)
+            popup.fade_in()
+            self.popups.append(popup)
+            self.out_id = self.after(8000, self.fade_out, popup)
 
-    def fade_out(self, win):
+    # 窗口淡出
+    def fade_out(self, win, gift_str=None):
         win.fade_out()
         idx = self.popups.index(win)
         if idx > 0:
             for i in range(0, idx):
                 self.popups[i].move_down(win.height)
         self.popups.remove(win)
+        if gift_str:
+            self.gift_popups.pop(gift_str)
 
 
 if __name__ == '__main__':
