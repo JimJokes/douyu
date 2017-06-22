@@ -7,6 +7,7 @@ from tkinter.messagebox import showwarning
 
 import utils
 from popup_win import LivePopup, StarPopup
+from dammu import Danmu
 
 star_file = os.path.join(os.getcwd(), 'starList.txt')
 
@@ -27,7 +28,7 @@ def frame_resize(event, frame, size, direction):
 class Window(tk.Tk):
     popups = []
     gift_popups = {}
-    out_id = None
+    out_ids = {}
 
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
@@ -161,9 +162,9 @@ class Window(tk.Tk):
         star_notebook.add(frame_star, text='关注列表')
         star_notebook.place(relwidth=1, relheight=1)
 
-        save_button = ttk.Button(frame, text='保存', width=5, command=self.live_popup)
+        save_button = ttk.Button(frame, text='保存', width=5, command=self.star_popup)
         save_button.place(anchor=tk.NE, relx=0.6, rely=0)
-        reload_button = ttk.Button(frame, text='更新', width=5, command=self.star_popup)
+        reload_button = ttk.Button(frame, text='更新', width=5, command=self.gift_popup)
         reload_button.place(anchor=tk.NE, relx=0.8, rely=0)
 
     # 表格视图创建
@@ -240,52 +241,53 @@ class Window(tk.Tk):
         self.read_stars()
 
     # 开播提醒弹出窗口
-    def live_popup(self):
-        popup = LivePopup(123324, 'icon.ico', '和覅哦啊集散地of就阿斯蒂芬', '直播中（已播120分钟）', '小缘')
+    def live_popup(self, room=123, image='196_170622002601.jpg', title='湖大覅就阿发回答UI覅哈吉会法界会好打法鸡从女子见覅哦啊发', status='直播中（已播112分钟）', name='123'):
+        popup = LivePopup(room, image, title, status, name)
         for win in self.popups:
             win.move_up(popup.height)
-        popup.fade_in()
+        popup.pop_up()
         self.popups.append(popup)
         self.after(5000, self.fade_out, popup)
 
     # 关注提醒弹出窗口
-    def star_popup(self):
-        name = 'ojdfioajfd'
-        gift_id = ''
-        hit = '5'
-        if gift_id is not '':
-            gift_str = name+gift_id
-            if gift_str in self.gift_popups.keys():
-                popup = self.gift_popups[gift_str]
-                popup.change_text(hit)
-                self.after_cancel(self.out_id)
-                self.out_id = self.after(8000, self.fade_out, popup, gift_str)
-            else:
-                popup = StarPopup(12321, name, '送出礼物 爱心火箭 连击X ', hit=hit)
-                for win in self.popups:
-                    win.move_up(popup.height)
-                popup.fade_in()
-                self.popups.append(popup)
-                self.gift_popups[gift_str] = popup
-                self.out_id = self.after(8000, self.fade_out, popup, gift_str)
+    def star_popup(self, room=123, name='讲哦发哈斯蒂芬', text='加个我哦啊大风会哦个'):
+        popup = StarPopup(room, name, text)
+        for win in self.popups:
+            win.move_up(popup.height)
+        popup.pop_up()
+        self.popups.append(popup)
+        self.after(8000, self.fade_out, popup)
+
+    # 礼物提醒弹出窗口
+    def gift_popup(self, room=123, name='和覅哦啊积分ID', text='我就热哦啊的房间啊', gift_id='123', hit='23'):
+        gift_str = name + gift_id
+        if gift_str in self.gift_popups.keys():
+            popup = self.gift_popups[gift_str]
+            popup.change_text(hit)
+            self.after_cancel(self.out_ids[gift_str])
+            out_id = self.after(8000, self.fade_out, popup, gift_str)
+            self.out_ids[gift_str] = out_id
         else:
-            popup = StarPopup(12321, name, '送出礼物 爱心火箭 连击X ')
+            popup = StarPopup(room, name, text, hit=hit)
             for win in self.popups:
                 win.move_up(popup.height)
-            popup.fade_in()
+            popup.pop_up()
             self.popups.append(popup)
-            self.out_id = self.after(8000, self.fade_out, popup)
+            self.gift_popups[gift_str] = popup
+            out_id = self.after(8000, self.fade_out, popup, gift_str)
+            self.out_ids[gift_str] = out_id
 
     # 窗口淡出
     def fade_out(self, win, gift_str=None):
-        win.fade_out()
+        if gift_str:
+            self.gift_popups.pop(gift_str)
+            self.out_ids.pop(gift_str)
+        win.pop_down()
         idx = self.popups.index(win)
         if idx > 0:
             for i in range(0, idx):
                 self.popups[i].move_down(win.height)
         self.popups.remove(win)
-        if gift_str:
-            self.gift_popups.pop(gift_str)
 
 
 if __name__ == '__main__':
