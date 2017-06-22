@@ -41,9 +41,9 @@ class Popup(tk.Toplevel):
     # 窗口下移事件
     def move_y_up(self, width, height, x):
         if self.y_src < self.y_des:
-            self.y_src += 10
+            self.y_src += 2
             self.position(width, height, x, self.y_src)
-            self.move_id = self.after(10, self.move_y_up, width, height, x)
+            self.move_id = self.after(5, self.move_y_up, width, height, x)
         else:
             self.position(width, height, x, self.y_des)
             self.y_src = self.y_des
@@ -52,9 +52,9 @@ class Popup(tk.Toplevel):
     # 窗口上移事件
     def move_y_down(self, width, height, x):
         if self.y_src > self.y_des:
-            self.y_src -= 10
+            self.y_src -= 2
             self.position(width, height, x, self.y_src)
-            self.move_id = self.after(10, self.move_y_down, width, height, x)
+            self.move_id = self.after(5, self.move_y_down, width, height, x)
         else:
             self.position(width, height, x, self.y_des)
             self.y_src = self.y_des
@@ -78,22 +78,28 @@ class Popup(tk.Toplevel):
         s.configure('white.TLabel', background='white', font=('Microsoft YaHei', 9))
         s.configure('title.white.TLabel', font=('Microsoft YaHei', 11))
 
+    def pop_up(self):
+        self.fade_in()
+
     # 窗口淡入
     def fade_in(self):
         if self.alpha < 1:
             self.alpha += 0.1
             self.attributes('-alpha', self.alpha)
-            self.after(30, self.fade_in)
+            self.after(20, self.fade_in)
         else:
             self.alpha = 1
             self.attributes('-alpha', self.alpha)
+
+    def pop_down(self):
+        self.fade_out()
 
     # 窗口淡出
     def fade_out(self):
         if self.alpha > 0:
             self.alpha -= 0.1
             self.attributes('-alpha', self.alpha)
-            self.after(30, self.fade_out)
+            self.after(20, self.fade_out)
         else:
             self.alpha = 0
             self.attributes('-alpha', self.alpha)
@@ -115,15 +121,15 @@ class LivePopup(Popup):
 
     # 基础窗口
     def window(self):
-        frame = ttk.Frame(self, padding=(2, 10, 2, 10), cursor='hand2', relief=tk.RAISED, style='white.TFrame')
+        frame = ttk.Frame(self, cursor='hand2', relief=tk.RAISED, style='white.TFrame')
         frame.pack(fill=tk.BOTH, expand=1)
 
         frame_image = ttk.Frame(frame, style='white.TFrame')
         frame_image.place(relheight=1, relwidth=0.3)
         self.window_image(frame_image)
 
-        frame_info = ttk.Frame(frame, style='white.TFrame')
-        frame_info.place(relheight=1, relwidth=0.65, relx=0.32)
+        frame_info = ttk.Frame(frame, style='white.TFrame', padding=(0, 5, 0, 5))
+        frame_info.place(relheight=1, relwidth=0.68, relx=0.32)
         self.window_info(frame_info)
 
         # close_button = ttk.Label(self, text='x', anchor=tk.CENTER, width=2)
@@ -133,38 +139,14 @@ class LivePopup(Popup):
 
     # 图片窗口
     def window_image(self, frame):
-        self.lebel_image = ttk.Label(frame, style='white.TLabel')
+        self.lebel_image = ttk.Label(frame, style='white.TLabel', anchor=tk.CENTER)
         self.lebel_image.place(relheight=1, relwidth=1)
 
         self.bind_event((self.lebel_image, ))
 
-    # 添加图片
-    def add_image(self):
-        img = Image.open(self.image)
-        width = img.width
-        height = img.height
-        f = min(self.lebel_image.winfo_width() / width, self.lebel_image.winfo_height() / height)
-        width = int(width * f)
-        height = int(height * f)
-        img = img.resize((width, height), Image.ANTIALIAS)
-        img = ImageTk.PhotoImage(img)
-        self.images.append(img)
-        self.lebel_image.config(image=img)
-
-    # 重写淡入事件，淡入前插入图片
-    def fade_in(self):
-        self.add_image()
-        if self.alpha < 1:
-            self.alpha += 0.1
-            self.attributes('-alpha', self.alpha)
-            self.after(30, self.fade_in)
-        else:
-            self.alpha = 1
-            self.attributes('-alpha', self.alpha)
-
     # 信息窗口
     def window_info(self, frame):
-        title = ttk.Label(frame, anchor=tk.W, style='title.white.TLabel', text=self.title, wraplength=240)
+        title = ttk.Label(frame, anchor=tk.W, style='title.white.TLabel', text=self.title, wraplength=265)
         title.place(relwidth=1, relheight=0.5)
 
         status = ttk.Label(frame, anchor=tk.W, text=self.status, style='white.TLabel')
@@ -174,6 +156,24 @@ class LivePopup(Popup):
         owner.place(relwidth=1, relheight=0.25, rely=0.75)
 
         self.bind_event((title, status, owner))
+
+    # 添加图片
+    def add_image(self):
+        img = Image.open(self.image)
+        width = img.width
+        height = img.height
+        f = min(115 / width, 85 / height)
+        width = int(width * f)
+        height = int(height * f)
+        img = img.resize((width, height), Image.ANTIALIAS)
+        img = ImageTk.PhotoImage(img)
+        self.images.append(img)
+        self.lebel_image.config(image=img)
+
+    # 淡入前插入图片
+    def pop_up(self):
+        self.add_image()
+        self.fade_in()
 
     # 点击事件绑定
     def bind_event(self, frames):
@@ -213,9 +213,10 @@ class StarPopup(Popup):
         label_text = ttk.Label(frame, text=self.text, style='title.white.TLabel', wraplength=right)
         label_text.place(width=right, relheight=1, x=left)
 
-        if self.hit is not None:
+        if self.hit:
             width = 390-left-right
-            self.label_num = tk.Label(frame, textvariable=self.hit_str, anchor=tk.W, font=self.font, bg='white', fg='red')
+            self.label_num = tk.Label(frame, textvariable=self.hit_str, anchor=tk.W,
+                                      font=self.font, bg='white', fg='red')
             self.label_num.place(width=width, relheight=1, x=left+right)
             self.change_text(self.hit)
 
@@ -226,7 +227,7 @@ class StarPopup(Popup):
         name_width = font.measure(self.name)
 
         left_width = max(room_width, name_width)+10
-        if self.hit is not None:
+        if self.hit:
             right_width = font.measure(self.text)+5
         else:
             right_width = 390 - left_width
