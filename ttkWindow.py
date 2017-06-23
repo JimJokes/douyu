@@ -1,6 +1,7 @@
 import os
 import sys
 import tkinter as tk
+from queue import Queue
 from tkinter import ttk
 from tkinter.font import Font
 from tkinter.messagebox import showwarning
@@ -25,18 +26,26 @@ def frame_resize(event, frame, size, direction):
         frame.config(height=event.height - size)
 
 
-class Window(tk.Tk):
+class Window:
     popups = []
     gift_popups = {}
     out_ids = {}
 
-    def __init__(self, *args, **kwargs):
-        super(Window, self).__init__(*args, **kwargs)
+    def __init__(self, master):
+        self.master = master
         self.lock_text = tk.StringVar()
         self.style()
         self.font = Font(family='Microsoft YaHei', size=11)
         self.window()
+        self.position()
         self.read_stars()
+
+    def position(self):
+        screen_width = self.master.winfo_screenwidth()
+        screen_height = self.master.winfo_screenheight()
+        x = int(screen_width/2-500)
+        y = int(screen_height/2-300)
+        self.master.geometry('1000x600+%s+%s' % (x, y))
 
     # 窗口风格定义
     def style(self):
@@ -247,7 +256,7 @@ class Window(tk.Tk):
             win.move_up(popup.height)
         popup.pop_up()
         self.popups.append(popup)
-        self.after(5000, self.fade_out, popup)
+        self.master.after(5000, self.fade_out, popup)
 
     # 关注提醒弹出窗口
     def star_popup(self, room=123, name='讲哦发哈斯蒂芬', text='加个我哦啊大风会哦个'):
@@ -256,7 +265,7 @@ class Window(tk.Tk):
             win.move_up(popup.height)
         popup.pop_up()
         self.popups.append(popup)
-        self.after(8000, self.fade_out, popup)
+        self.master.after(8000, self.fade_out, popup)
 
     # 礼物提醒弹出窗口
     def gift_popup(self, room=123, name='和覅哦啊积分ID', text='我就热哦啊的房间啊', gift_id='123', hit='23'):
@@ -264,8 +273,8 @@ class Window(tk.Tk):
         if gift_str in self.gift_popups.keys():
             popup = self.gift_popups[gift_str]
             popup.change_text(hit)
-            self.after_cancel(self.out_ids[gift_str])
-            out_id = self.after(8000, self.fade_out, popup, gift_str)
+            self.master.after_cancel(self.out_ids[gift_str])
+            out_id = self.master.after(8000, self.fade_out, popup, gift_str)
             self.out_ids[gift_str] = out_id
         else:
             popup = StarPopup(room, name, text, hit=hit)
@@ -274,7 +283,7 @@ class Window(tk.Tk):
             popup.pop_up()
             self.popups.append(popup)
             self.gift_popups[gift_str] = popup
-            out_id = self.after(8000, self.fade_out, popup, gift_str)
+            out_id = self.master.after(8000, self.fade_out, popup, gift_str)
             self.out_ids[gift_str] = out_id
 
     # 窗口淡出
@@ -291,9 +300,9 @@ class Window(tk.Tk):
 
 
 if __name__ == '__main__':
-    app = Window()
-    app.geometry('1000x600+300+150')
-    app.mainloop()
+    root = tk.Tk()
+    win = Window(root)
+    root.mainloop()
     # top = tk.Tk()
     # app = LivePopup(top)
     # app.popup()
