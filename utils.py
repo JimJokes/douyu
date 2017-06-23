@@ -53,15 +53,16 @@ def deserialize(raw):
         if not v:
             v = ''
 
-        # try:
-        #     if v.index('@=') >= 0:
-        #         v = deserialize(v)
-        # except ValueError as e:
-        #     pass
-        if k in ('sui', 'el'):
-            v = deserialize(unescape(v))
-        elif k in ('list_day', 'list_all', 'nl', 'list'):
-            v = __deserialize2(unescape(v))
+        try:
+            if k not in ('txt', 'nn') and v.index('@A=') >= 0:
+                items = [elem for elem in v.split('/') if len(elem) > 0]
+                if len(items) == 1:
+                    v = deserialize(unescape(items[0]))
+                elif len(items) > 1:
+                    v = [deserialize(unescape(item)) for item in items]
+                # v = deserialize(v)
+        except ValueError:
+            pass
 
         result[k] = v
 
