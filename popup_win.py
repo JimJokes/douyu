@@ -15,7 +15,7 @@ class Popup(tk.Toplevel):
     x_src = 20
     y_src = 50
     y_des = 50
-    images = []
+    # images = []
 
     def __init__(self, master=None, **kwargs):
         super(Popup, self).__init__(master=master, **kwargs)
@@ -26,35 +26,39 @@ class Popup(tk.Toplevel):
 
     # 窗口上移
     def move_up(self, distance=90):
-        self.y_des = self.y_des + distance + 5
+        distance = distance+5
+        interval = int(100/distance)
+        self.y_des = self.y_des+distance
         if self.move_id:
             self.after_cancel(self.move_id)
-        self.move_y_up(self.width, self.height, self.x_src)
+        self.move_y_up(self.width, self.height, self.x_src, interval)
 
     # 窗口下移
     def move_down(self, distance=90):
-        self.y_des = self.y_des - distance - 5
+        distance = distance+5
+        interval = int(100/distance)
+        self.y_des = self.y_des-distance
         if self.move_id:
             self.after_cancel(self.move_id)
-        self.move_y_down(self.width, self.height, self.x_src)
+        self.move_y_down(self.width, self.height, self.x_src, interval)
 
     # 窗口下移事件
-    def move_y_up(self, width, height, x):
+    def move_y_up(self, width, height, x, interval):
         if self.y_src < self.y_des:
-            self.y_src += 2
+            self.y_src += 1
             self.position(width, height, x, self.y_src)
-            self.move_id = self.after(5, self.move_y_up, width, height, x)
+            self.move_id = self.after(interval, self.move_y_up, width, height, x, interval)
         else:
             self.position(width, height, x, self.y_des)
             self.y_src = self.y_des
             self.move_id = None
 
     # 窗口上移事件
-    def move_y_down(self, width, height, x):
+    def move_y_down(self, width, height, x, interval):
         if self.y_src > self.y_des:
-            self.y_src -= 2
+            self.y_src -= 1
             self.position(width, height, x, self.y_src)
-            self.move_id = self.after(5, self.move_y_down, width, height, x)
+            self.move_id = self.after(interval, self.move_y_down, width, height, x, interval)
         else:
             self.position(width, height, x, self.y_des)
             self.y_src = self.y_des
@@ -76,7 +80,7 @@ class Popup(tk.Toplevel):
         s = ttk.Style()
         s.configure('white.TFrame', background='white')
         s.configure('white.TLabel', background='white', font=('Microsoft YaHei', 9))
-        s.configure('title.white.TLabel', font=('Microsoft YaHei', 11))
+        s.configure('title.white.TLabel', font=('Microsoft YaHei', 11), foreground='blue')
 
     def pop_up(self):
         self.fade_in()
@@ -103,7 +107,6 @@ class Popup(tk.Toplevel):
         else:
             self.alpha = 0
             self.attributes('-alpha', self.alpha)
-            self.images.clear()
             self.destroy()
 
 
@@ -111,6 +114,7 @@ class Popup(tk.Toplevel):
 class LivePopup(Popup):
     def __init__(self, room, image, title, status, name, master=None, **kwargs):
         super(LivePopup, self).__init__(master=master, **kwargs)
+        self.img = None
         self.room = room
         self.image = image
         self.title = title.strip()
@@ -121,14 +125,14 @@ class LivePopup(Popup):
 
     # 基础窗口
     def window(self):
-        frame = ttk.Frame(self, cursor='hand2', relief=tk.RAISED, style='white.TFrame')
+        frame = tk.Frame(self, cursor='hand2', relief=tk.RAISED, bd=2, bg='white')
         frame.pack(fill=tk.BOTH, expand=1)
 
         frame_image = ttk.Frame(frame, style='white.TFrame')
         frame_image.place(relheight=1, relwidth=0.3)
         self.window_image(frame_image)
 
-        frame_info = ttk.Frame(frame, style='white.TFrame', padding=(0, 5, 0, 5))
+        frame_info = ttk.Frame(frame, style='white.TFrame', padding=(0, 0, 0, 5))
         frame_info.place(relheight=1, relwidth=0.68, relx=0.32)
         self.window_info(frame_info)
 
@@ -165,10 +169,9 @@ class LivePopup(Popup):
         f = min(115 / width, 85 / height)
         width = int(width * f)
         height = int(height * f)
-        img = img.resize((width, height), Image.ANTIALIAS)
-        img = ImageTk.PhotoImage(img)
-        self.images.append(img)
-        self.lebel_image.config(image=img)
+        self.img = img.resize((width, height), Image.ANTIALIAS)
+        self.img = ImageTk.PhotoImage(self.img)
+        self.lebel_image.config(image=self.img)
 
     # 淡入前插入图片
     def pop_up(self):
@@ -190,47 +193,57 @@ class StarPopup(Popup):
     def __init__(self, room, name, text, hit=None, master=None, **kwargs):
         super(StarPopup, self).__init__(master=master, **kwargs)
         self.hit_str = tk.StringVar()
-        self.font = Font(family='Microsoft YaHei', size=11, weight='bold')
+        self.font = Font(family='Microsoft YaHei', size=11)
+        self.font_bold = Font(family='Microsoft YaHei', size=11, weight='bold')
         self.room = '[%s]' % room
         self.name = '%s' % name.strip()
         self.text = text.strip()
         self.hit = hit
-        self.height = 50
+        self.height = 30
         self.window()
         self.position(self.width, self.height, self.x_src, self.y_src)
 
     # 基础窗口
     def window(self):
-        frame = ttk.Frame(self, padding=(5, 2, 5, 2), relief=tk.RAISED, style='white.TFrame')
-        frame.pack(fill=tk.BOTH, expand=1)
+        # frame = ttk.Frame(self, padding=(5, 0, 5, 0), relief=tk.RAISED, style='white.TFrame')
+        frame = tk.Frame(self, relief=tk.RAISED, bg='white', bd=2)
+        frame.place(relwidth=1, relheight=1, bordermode='inside')
 
-        text_name = '%s\n%s' % (self.room, self.name)
+        # text_name = '%s\n%s' % (self.room, self.name)
         left, right = self.resize_width()
 
-        label_name = ttk.Label(frame, text=text_name, style='title.white.TLabel', justify=tk.CENTER)
+        # label_name = ttk.Label(frame, text=self.name, style='title.white.TLabel', justify=tk.CENTER)
+        label_name = tk.Label(frame, text=self.name, justify=tk.CENTER, bg='white', font=self.font)
         label_name.place(width=left, relheight=1)
 
-        label_text = ttk.Label(frame, text=self.text, style='title.white.TLabel', wraplength=right)
+        # label_text = ttk.Label(frame, text=self.text, style='title.white.TLabel', wraplength=right)
+        label_text = tk.Label(frame, text=self.text, wraplength=right, bg='white', font=self.font,
+                              justify=tk.LEFT, anchor=tk.W)
         label_text.place(width=right, relheight=1, x=left)
 
         if self.hit:
             width = 390-left-right
             self.label_num = tk.Label(frame, textvariable=self.hit_str, anchor=tk.W,
-                                      font=self.font, bg='white', fg='red')
+                                      font=self.font_bold, bg='white', fg='red')
             self.label_num.place(width=width, relheight=1, x=left+right)
             self.change_text(self.hit)
 
     # 窗口宽度定义
     def resize_width(self):
-        font = Font(family='Microsoft YaHei', size=11)
-        room_width = font.measure(self.room)
-        name_width = font.measure(self.name)
+        # font = Font(family='Microsoft YaHei', size=11)
+        # room_width = font.measure(self.room)
+        name_width = self.font.measure(self.name)
 
-        left_width = max(room_width, name_width)+10
+        left_width = name_width+10
         if self.hit:
-            right_width = font.measure(self.text)+5
+            right_width = self.font.measure(self.text)+5
         else:
             right_width = 390 - left_width
+
+        text_width = self.font.measure(self.text)
+        if text_width > right_width:
+            self.height = 50
+
         return left_width, right_width
 
     # 动态改变文字
