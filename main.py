@@ -2,7 +2,7 @@ from window import View
 import encodings.idna
 from logger import Logger
 
-__version__ = 'v1.0.1'
+__version__ = 'v2.0'
 
 if __name__ == '__main__':
     logger = Logger(name='main')
