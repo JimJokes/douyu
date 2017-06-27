@@ -105,8 +105,8 @@ class Popup(tk.Toplevel):
             self.attributes('-alpha', self.alpha)
             self.after(20, self.fade_out)
         else:
-            self.alpha = 0
-            self.attributes('-alpha', self.alpha)
+            # self.alpha = 0
+            # self.attributes('-alpha', self.alpha)
             self.destroy()
 
 
@@ -190,12 +190,11 @@ class LivePopup(Popup):
 
 # 关注信息弹窗
 class StarPopup(Popup):
-    def __init__(self, room, name, text, hit=None, master=None, **kwargs):
+    def __init__(self, name, text, hit=None, master=None, **kwargs):
         super(StarPopup, self).__init__(master=master, **kwargs)
         self.hit_str = tk.StringVar()
         self.font = Font(family='Microsoft YaHei', size=11)
         self.font_bold = Font(family='Microsoft YaHei', size=11, weight='bold')
-        self.room = '[%s]' % room
         self.name = '%s' % name.strip()
         self.text = text.strip()
         self.hit = hit
