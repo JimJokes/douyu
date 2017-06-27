@@ -5,6 +5,7 @@ import time
 
 from packet import Packet
 from message import Message
+from utils import UnmatchedLengthError
 import logging
 logger = logging.getLogger('main.'+__name__)
 
@@ -51,104 +52,94 @@ def write(msg, file):
 # test
 
 
+class ReplyMessage:
+    ERROR, WARNING, SUCCESS = range(3)
+
+    def __init__(self, msg_type, code, data=None):
+        self.type = msg_type
+        self.code = code
+        self.data = data
+
+
+class CommandMessage:
+    CONNECT, SEND, RECEIVE, CLOSE = range(4)
+
+    def __init__(self, msg_type, data=None):
+        self.type = msg_type
+        self.data = data
+
+
 class Client:
-
-    s = None
-    buff = None
-    msg_buff = None
-
-    send_lock = threading.Lock()
-
-    def __init__(self):
-        self.s = None
+    def __init__(self, result_q):
+        self.result_q = result_q
+        # self.s = None
+        self.s = socket.create_connection(IP)
         self.num = 0
 
     def connect(self):
         while True:
             try:
-                self.disconnect()
                 self.s = socket.create_connection(IP)
+                self.result_q.put(self._success_reply(code=2001, data='连接弹幕服务器成功！'))
                 self.num = 0
-                return
-            except (ConnectionRefusedError, ConnectionResetError) as e:
+            except (ConnectionResetError, ConnectionRefusedError) as e:
                 logger.warning(e)
             except ConnectionAbortedError as e:
                 logger.exception(e)
-            except Exception as e:
-                logger.exception(e)
+
             self.num += 1
             if self.num > 30:
-                yield Message({'type': 'error', 'code': '2000'})
+                self.result_q.put(self._warn_reply(1999, '连接弹幕服务器失败，请重新连接！'))
                 self.num = 0
             time.sleep(1)
             continue
 
-    def receive(self):
-
-        self.buff = b''
-        self.msg_buff = ''
-
-        while True:
-
-            try:
-                data = self.s.recv(MAX_RECV_SIZE)
-            except (ConnectionAbortedError, ConnectionResetError, ConnectionRefusedError) as e:
-                logger.warning(e)
-                for msg in self.connect():
-                    yield msg
-                continue
-            except Exception as e:
-                logger.exception(e)
-                time.sleep(1)
-                continue
-
-            if not data:
-                continue
-
-            self.buff += data
-
-            while True:
-
-                packet = Packet.sniff(self.buff)
-                if packet is None:
-                    break
-
-                self.buff = self.buff[packet.size():]
-
-                try:
-                    self.msg_buff += packet.body.decode('UTF-8')
-                except UnicodeDecodeError as e:
-                    logger.info(e)
-                    logger.info(packet.body)
-                    pass
-
-                while True:
-
-                    message = Message.sniff(self.msg_buff)
-                    if message is None:
-                        break
-
-                    # test
-                    msgtype = message.body['type']
-                    if msgtype not in msg_type:
-                        msg_type.append(msgtype)
-                        write(msgtype, type_file)
-                        msg_file = os.path.join(data_file, msgtype)
-                        write(self.msg_buff, msg_file)
-                    # test
-
-                    self.msg_buff = self.msg_buff[(message.size() + 1):]
-
-                    yield message
-
-    def send_msg(self, message_body):
-        self.send_lock.acquire()
+    def send_msg(self, data):
         try:
-            self.s.send(Packet(Message(message_body).to_text()).to_raw())
-        finally:
-            self.send_lock.release()
+            self.s.sendall(Packet(Message(data).to_text()).to_raw())
+            self.result_q.put(self._success_reply(code=2002))
+        except Exception as e:
+            logger.exception(e)
+
+    def receive(self):
+        try:
+            header = self._receive_n_bytes(12)
+            if len(header) == 12:
+                data_len = Packet.header_sniff(header)
+                packet = Packet(self._receive_n_bytes(data_len))
+                try:
+                    msg_buff = packet.body.decode()
+                    message = Message.sniff(msg_buff)
+                    self.result_q.put(self._success_reply(message))
+                except UnicodeDecodeError as e:
+                    self.result_q.put(self._warn_reply(1998, e))
+                    logger.info(packet.body)
+        except ConnectionAbortedError as e:
+            logger.exception(e)
+            self.result_q.put(self._error_reply(9999, e))
+        except (ConnectionRefusedError, ConnectionResetError) as e:
+            self.result_q.put(self._error_reply(9999, e))
+        except UnmatchedLengthError as e:
+            self.result_q.put(self._error_reply(9998, e))
 
     def disconnect(self):
-        if self.s is not None:
-            self.s.close()
-            self.s = None
+        self.s.close()
+        self.result_q.put(self._success_reply(2003, '断开弹幕服务器连接成功！'))
+
+    def _receive_n_bytes(self, n):
+        data = b''
+        while len(data) < n:
+            chunk = self.s.recv(n-len(data))
+            if chunk == b'':
+                break
+            data += chunk
+        return data
+
+    def _error_reply(self, code, err_str):
+        return ReplyMessage(ReplyMessage.ERROR, code, err_str)
+
+    def _warn_reply(self, code, warn_data):
+        return ReplyMessage(ReplyMessage.WARNING, code, warn_data)
+
+    def _success_reply(self, code=2000, data=None):
+        return ReplyMessage(ReplyMessage.SUCCESS, code, data)
