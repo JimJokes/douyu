@@ -173,7 +173,7 @@ class Window:
 
         save_button = ttk.Button(frame, text='保存', width=5, command=self.star_popup)
         save_button.place(anchor=tk.NE, relx=0.6, rely=0)
-        reload_button = ttk.Button(frame, text='更新', width=5, command=self.gift_popup)
+        reload_button = ttk.Button(frame, text='更新', width=5, command=self.live_popup)
         reload_button.place(anchor=tk.NE, relx=0.8, rely=0)
 
     # 表格视图创建
@@ -250,7 +250,7 @@ class Window:
         self.read_stars()
 
     # 开播提醒弹出窗口
-    def live_popup(self, room=123, image='196_170622002601.jpg', title='湖大覅就阿发回答UI覅哈吉会法界会好打法鸡从女子见覅哦啊发', status='直播中（已播112分钟）', name='123'):
+    def live_popup(self, room=123, image='196_170622002601.jpg', title='【小缘】啵啵啵啵啵啵', status='直播中（已播112分钟）', name='123'):
         popup = LivePopup(room, image, title, status, name)
         for win in self.popups:
             win.move_up(popup.height)
@@ -268,8 +268,10 @@ class Window:
         self.master.after(8000, self.fade_out, popup)
 
     # 礼物提醒弹出窗口
-    def gift_popup(self, room=123, name='和覅哦啊积分ID', text='我就热哦啊的房间啊', gift_id='123', hit='23'):
-        gift_str = name + gift_id
+    def gift_popup(self, name='和覅哦啊积分ID', text='我就热哦啊的房间啊', gift_id='123', hit='23'):
+        gift_str = None
+        if gift_id:
+            gift_str = name + gift_id
         if gift_str in self.gift_popups.keys():
             popup = self.gift_popups[gift_str]
             popup.change_text(hit)
@@ -277,7 +279,7 @@ class Window:
             out_id = self.master.after(8000, self.fade_out, popup, gift_str)
             self.out_ids[gift_str] = out_id
         else:
-            popup = StarPopup(room, name, text, hit=hit)
+            popup = StarPopup(name, text, hit=hit)
             for win in self.popups:
                 win.move_up(popup.height)
             popup.pop_up()
