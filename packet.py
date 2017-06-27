@@ -1,4 +1,5 @@
 from struct import pack, unpack
+from utils import UnmatchedLengthError
 import logging
 logger = logging.getLogger('main.'+__name__)
 
@@ -50,3 +51,12 @@ class Packet:
             body = body[0:needed_body_length]
 
         return Packet(body)
+
+    @staticmethod
+    def header_sniff(buff):
+        packet_length_1, packet_length_2, msg_type, encryption, reserved = unpack('<llhbb', buff)
+
+        if packet_length_1 != packet_length_2:
+            raise UnmatchedLengthError('[Packet] Unmatched packet length fields!')
+
+        return packet_length_1-12
