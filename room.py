@@ -38,38 +38,6 @@ class KeepAlive(threading.Thread):
 class ChatRoom:
     channel_id = -9999
 
-    def __init__(self, room_id):
-        self.room_id = room_id
+    def __init__(self, room):
+        self.room = room
         self.client = Client()
-
-    def connect(self):
-        for mess in self.client.connect():
-            yield mess
-
-    def knock(self):
-        try:
-            self.client.send_msg({'type': 'loginreq', 'roomid': self.room_id})
-        except Exception as e:
-            logger.exception(e)
-
-        for message in self.client.receive():
-
-            if not message:
-                continue
-
-            msg_type = message.attr('type')
-
-            if msg_type == 'loginres':
-                try:
-                    self.client.send_msg({'type': 'joingroup', 'rid': self.room_id, 'gid': self.channel_id})
-                    logger.info('已连接到弹幕服务器，房间id：%s' % self.room_id)
-                except Exception as e:
-                    logger.exception(e)
-            if msg_type == 'error':
-                logger.warning('error:'+message.attr('code'))
-
-            yield message
-
-    def cutoff(self):
-        self.client.send_msg({'type': 'logout'})
-        self.client.disconnect()
