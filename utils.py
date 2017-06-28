@@ -73,6 +73,23 @@ class UnmatchedLengthError(Exception):
     pass
 
 
+class ReplyMessage:
+    ERROR, WARNING, SUCCESS = range(3)
+
+    def __init__(self, msg_type, code, data=None):
+        self.type = msg_type
+        self.code = code
+        self.data = data
+
+
+class CommandMessage:
+    CONNECT, SEND, RECEIVE, CLOSE = range(4)
+
+    def __init__(self, msg_type, data=None):
+        self.type = msg_type
+        self.data = data
+
+
 i = 0
 j = 0
 room = None
