@@ -1,14 +1,12 @@
 import os
 import sys
 import tkinter as tk
-from queue import Queue
 from tkinter import ttk
 from tkinter.font import Font
 from tkinter.messagebox import showwarning
 
 import utils
 from popup_win import LivePopup, StarPopup
-from dammu import Danmu
 
 star_file = os.path.join(os.getcwd(), 'starList.txt')
 
