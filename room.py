@@ -2,6 +2,10 @@ import threading
 import time
 
 import logging
+
+from message import Message
+from packet import Packet
+
 logger = logging.getLogger('main.'+__name__)
 try:
     from client_test import Client
@@ -79,7 +83,7 @@ class ChatRoom(threading.Thread):
 
     def join_group(self):
         data = {'type': 'joingroup', 'rid': self.room, 'gid': self.channel_id}
-        res = self.client.send_msg(data)
+        res = self.client.send_msg(Packet(Message(data).to_text()).to_raw())
 
         if res == ReplyMessage.SUCCESS:
             res.code = 2000
@@ -88,4 +92,7 @@ class ChatRoom(threading.Thread):
 
     def quit_group(self):
         data = {'type': 'logout'}
-        self.client.send_msg(data)
+        self.client.send_msg(Packet(Message(data).to_text()).to_raw())
+
+    def quit(self):
+        self.alive.clear()
