@@ -2,7 +2,6 @@ import time
 import socket
 
 from packet import Packet
-from message import Message
 from utils import UnmatchedLengthError, ReplyMessage
 
 import logging
@@ -38,7 +37,7 @@ class Client:
 
     def send_msg(self, data):
         try:
-            self.s.sendall(Packet(Message(data).to_text()).to_raw())
+            self.s.sendall(data)
             return self._success_reply()
         except Exception as e:
             logger.exception(e)
