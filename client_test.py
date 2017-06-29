@@ -1,5 +1,6 @@
 import time
 import socket
+import threading
 
 from packet import Packet
 from utils import UnmatchedLengthError, ReplyMessage
@@ -13,14 +14,17 @@ IP = (HOST, PORT)
 
 
 class Client:
+    Lock = threading.Lock()
+
     def __init__(self):
-        self.s = None
+        self.sock = None
         self.num = 0
 
     def connect(self):
         while True:
             try:
-                self.s = socket.create_connection(IP)
+                self.sock = socket.create_connection(IP)
+                self.sock.settimeout(600)
                 self.num = 0
                 return self._success_reply()
             except (ConnectionResetError, ConnectionRefusedError) as e:
@@ -36,11 +40,14 @@ class Client:
             continue
 
     def send_msg(self, data):
+        self.Lock.acquire()
         try:
-            self.s.sendall(data)
+            self.sock.sendall(data)
             return self._success_reply()
         except Exception as e:
             logger.exception(e)
+        finally:
+            self.Lock.release()
 
     def receive(self):
         try:
@@ -49,6 +56,8 @@ class Client:
                 data_len = Packet.header_sniff(header)
                 data = self._receive_n_bytes(data_len)
                 return self._success_reply(data=data)
+        except socket.timeout:
+            return self._error_reply(code=402)
         except ConnectionAbortedError as e:
             logger.exception(e)
             return self._error_reply()
@@ -58,13 +67,13 @@ class Client:
             return self._error_reply(code=401)
 
     def disconnect(self):
-        self.s.close()
+        self.sock.close()
         return self._success_reply()
 
     def _receive_n_bytes(self, n):
         data = b''
         while len(data) < n:
-            chunk = self.s.recv(n-len(data))
+            chunk = self.sock.recv(n - len(data))
             if chunk == b'':
                 break
             data += chunk
