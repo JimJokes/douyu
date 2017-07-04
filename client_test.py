@@ -3,7 +3,7 @@ import socket
 import threading
 
 from packet import Packet
-from utils import UnmatchedLengthError
+from utils import UnmatchedLengthError, ReplyMessage
 
 import logging
 logger = logging.getLogger('main.'+__name__)
@@ -11,13 +11,6 @@ logger = logging.getLogger('main.'+__name__)
 HOST = 'openbarrage.douyutv.com'
 PORT = 8601
 IP = (HOST, PORT)
-
-
-class ReplyMessage:
-    def __init__(self, status, code, data=None):
-        self.status = status
-        self.code = code
-        self.data = data
 
 
 class Client:
@@ -35,6 +28,8 @@ class Client:
             logger.warning(e)
         except ConnectionAbortedError as e:
             logger.exception(e)
+        except Exception as e:
+            logger.exception(e)
         return self._error_reply()
 
     def send_msg(self, data):
@@ -44,6 +39,7 @@ class Client:
             return self._success_reply()
         except Exception as e:
             logger.exception(e)
+            return self._error_reply()
         finally:
             self.Lock.release()
 
@@ -55,14 +51,17 @@ class Client:
                 data = self._receive_n_bytes(data_len)
                 return self._success_reply(data=data)
         except UnmatchedLengthError as e:
-            logger.info(e)
+            logger.warning(e)
         except ConnectionAbortedError as e:
             logger.exception(e)
-        except (ConnectionRefusedError, ConnectionResetError, socket.timeout):
-            pass
+        except (ConnectionRefusedError, ConnectionResetError, socket.timeout) as e:
+            logger.warning(e)
+        except Exception as e:
+            logger.exception(e)
         return self._error_reply()
 
     def disconnect(self):
+        self.sock.shutdown(2)
         self.sock.close()
         return self._success_reply()
 
@@ -76,7 +75,7 @@ class Client:
         return data
 
     def _error_reply(self, code=400):
-        return ReplyMessage(False, code)
+        return ReplyMessage(ReplyMessage.ERROR, code)
 
     def _success_reply(self, code=200, data=None):
-        return ReplyMessage(True, code, data=data)
+        return ReplyMessage(ReplyMessage.SUCCESS, code, data=data)
