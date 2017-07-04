@@ -76,10 +76,10 @@ class UnmatchedLengthError(Exception):
 
 
 class ReplyMessage:
-    ERROR, WARNING, SUCCESS = range(3)
+    SUCCESS, ERROR = range(2)
 
-    def __init__(self, msg_type, code, data=None):
-        self.type = msg_type
+    def __init__(self, style, code, data=None):
+        self.style = style
         self.code = code
         self.data = data
 
