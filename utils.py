@@ -97,9 +97,3 @@ j = 0
 room = None
 stars = []
 CheckVar = True
-gifts = {}
-cq = {
-    '1': '初级酬勤',
-    '2': '中级酬勤',
-    '3': '高级酬勤',
-}
