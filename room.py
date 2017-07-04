@@ -1,9 +1,11 @@
-import threading
 import time
-
 import logging
+import threading
+from queue import Empty
 
-import utils
+# import utils
+from tkinter import Tk
+
 from message import Message
 from packet import Packet
 
@@ -41,6 +43,10 @@ class KeepAlive(threading.Thread):
             time.sleep(self.delay)
 
 
+def now_time():
+    return time.strftime('%m-%d %H:%M:%S', time.localtime())
+
+
 class ChatRoom(threading.Thread):
     channel_id = -9999
     cq = {
@@ -48,11 +54,14 @@ class ChatRoom(threading.Thread):
         '2': '中级酬勤',
         '3': '高级酬勤',
     }
+    gifts = {}
 
-    def __init__(self, room, result_q):
+    def __init__(self, room, result_q, gift_q, root):
         super(ChatRoom, self).__init__()
         self.room = room
         self.result_q = result_q
+        self.gift_q = gift_q
+        self.root = Tk()
         self.client = Client()
         self.alive = threading.Event()
         self.alive.set()
@@ -60,6 +69,10 @@ class ChatRoom(threading.Thread):
     def run(self):
         self.connect()
         while self.alive:
+            try:
+                self.gifts = self.gift_q.get(False)
+            except Empty:
+                pass
             message = self.receive()
             if message is None:
                 continue
@@ -69,22 +82,24 @@ class ChatRoom(threading.Thread):
     def _handle_message(self, message):
         data = {}
         msg_type = message.attr('type')
-        data['time'] = self.now_time()
+        data['time'] = now_time()
         data['type'] = msg_type
-        if msg_type == 'chatmsg':
-            data['nn'] = message.attr('nn')
+        data['nn'] = message.attr('nn')
+
+        if msg_type == 'loginres':
+            data['txt'] = self.join_group()
+
+        elif msg_type == 'chatmsg':
             data['lv'] = message.attr('level')
             data['txt'] = message.attr('txt')
 
         elif msg_type == 'uenter':
-            data['nn'] = message.attr('nn')
             data['txt'] = '进入了直播间！'
 
         elif msg_type == 'dgb':
-            data['nn'] = message.attr('nn')
             gfid = message.attr('gfid')
             try:
-                data['gift'] = utils.gifts[gfid]
+                data['gift'] = self.gifts[gfid]
             except KeyError:
                 data['gift'] = '未知礼物%s' % gfid
             data['hit'] = message.attr('hits') or 1
@@ -101,9 +116,7 @@ class ChatRoom(threading.Thread):
             data['room'] = message.attr('drid')
 
         self.result_q.put(data)
-
-    def now_time(self):
-        return time.strftime('%m-%d %H:%M:%S', time.localtime())
+        self.root.event_generate('<MESSAGE>')
 
     def receive(self):
         res = self.client.receive()
@@ -113,6 +126,7 @@ class ChatRoom(threading.Thread):
                 self.quit_group()
             self.client.disconnect()
             self.connect()
+            return None
 
         elif res.type == ReplyMessage.SUCCESS:
             data = res.data
@@ -126,15 +140,23 @@ class ChatRoom(threading.Thread):
                 return None
 
     def connect(self):
+        num = 0
+        data = {}
         while True:
             res = self.client.connect()
 
             if res.type == ReplyMessage.SUCCESS:
                 break
             elif res.type == ReplyMessage.WARNING:
-                res.code = 2000
-                res.data = '弹幕服务器连接错误，请重新连接！'
-                self.result_q.put(res)
+                if num < 30:
+                    num += 1
+                    continue
+                else:
+                    num = 0
+                    data['type'] = 'error'
+                    data['txt'] = '弹幕服务器连接错误，请重新连接！'
+                    self.result_q.put(res)
+                    self.root.event_generate('<MESSAGE>')
 
             time.sleep(1)
 
@@ -143,9 +165,7 @@ class ChatRoom(threading.Thread):
         res = self.client.send_msg(Packet(Message(data).to_text()).to_raw())
 
         if res == ReplyMessage.SUCCESS:
-            res.code = 2000
-            res.data = '已连接到弹幕服务器，房间id：%s' % self.room
-            self.result_q.put(res)
+            return '已连接到弹幕服务器，房间id：%s' % self.room
 
     def quit_group(self):
         data = {'type': 'logout'}
