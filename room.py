@@ -3,21 +3,28 @@ import logging
 import threading
 from queue import Empty
 
-# import utils
-from tkinter import Tk
-
 from message import Message
 from packet import Packet
+from utils import ReplyMessage
 
 logger = logging.getLogger('main.'+__name__)
 try:
     from client_test import Client
 except ImportError:
     from client import Client
-from utils import ReplyMessage
 
 RAW_BUFF_SIZE = 4096
 KEEP_ALIVE_INTERVAL_SECONDS = 45
+
+
+class Data:
+    def __init__(self):
+        self.time = now_time()
+        self.msg_type = None
+        self.nn = None
+        self.lv = None
+        self.txt = None
+        self.room = None
 
 
 class KeepAlive(threading.Thread):
@@ -61,7 +68,7 @@ class ChatRoom(threading.Thread):
         self.room = room
         self.result_q = result_q
         self.gift_q = gift_q
-        self.root = Tk()
+        self.root = root
         self.client = Client()
         self.alive = threading.Event()
         self.alive.set()
@@ -80,40 +87,39 @@ class ChatRoom(threading.Thread):
                 self._handle_message(message)
 
     def _handle_message(self, message):
-        data = {}
+        data = Data()
         msg_type = message.attr('type')
-        data['time'] = now_time()
-        data['type'] = msg_type
-        data['nn'] = message.attr('nn')
+        data.msg_type = msg_type
+        data.nn = message.attr('nn')
 
         if msg_type == 'loginres':
-            data['txt'] = self.join_group()
+            data.txt = self.join_group()
 
         elif msg_type == 'chatmsg':
-            data['lv'] = message.attr('level')
-            data['txt'] = message.attr('txt')
+            data.lv = message.attr('level')
+            data.txt = message.attr('txt')
 
         elif msg_type == 'uenter':
-            data['txt'] = '进入了直播间！'
+            data.txt = '进入了直播间！'
 
         elif msg_type == 'dgb':
             gfid = message.attr('gfid')
             try:
-                data['gift'] = self.gifts[gfid]
+                data.gift = self.gifts[gfid]
             except KeyError:
-                data['gift'] = '未知礼物%s' % gfid
-            data['hit'] = message.attr('hits') or 1
+                data.gift = '未知礼物%s' % gfid
+            data.hits = message.attr('hits') or 1
 
         elif msg_type == 'bc_buy_deserve':
-            data['nn'] = message.attr('sui')['nick']
-            data['cp'] = self.cq[message.attr('lev')]
-            data['hit'] = message.attr('hits')
+            data.nn = message.attr('sui')['nick']
+            data.cq = self.cq[message.attr('lev')]
+            data.hits = message.attr('hits')
 
         elif msg_type == 'spbc':
-            data['nn'] = message.attr('sn')
-            data['gift'] = message.attr('gn')
-            data['dn'] = message.attr('dn')
-            data['room'] = message.attr('drid')
+            data.nn = message.attr('sn')
+            data.gift = message.attr('gn')
+            data.dn = message.attr('dn')
+            data.room = message.attr('drid')
 
         self.result_q.put(data)
         self.root.event_generate('<MESSAGE>')
@@ -122,8 +128,7 @@ class ChatRoom(threading.Thread):
         res = self.client.receive()
 
         if res.type == ReplyMessage.ERROR:
-            if res.code == 401 or 402:
-                self.quit_group()
+            self.quit_group()
             self.client.disconnect()
             self.connect()
             return None
@@ -147,15 +152,15 @@ class ChatRoom(threading.Thread):
 
             if res.type == ReplyMessage.SUCCESS:
                 break
-            elif res.type == ReplyMessage.WARNING:
+            elif res.type == ReplyMessage.ERROR:
                 if num < 30:
                     num += 1
                     continue
                 else:
                     num = 0
-                    data['type'] = 'error'
-                    data['txt'] = '弹幕服务器连接错误，请重新连接！'
-                    self.result_q.put(res)
+                    data.msg_type = 'error'
+                    data.txt = '弹幕服务器连接错误，请重新连接！'
+                    self.result_q.put(data)
                     self.root.event_generate('<MESSAGE>')
 
             time.sleep(1)
@@ -173,6 +178,3 @@ class ChatRoom(threading.Thread):
 
     def quit(self):
         self.alive.clear()
-
-    def _reply(self, code=None, data=None):
-        return ReplyMessage(ReplyMessage.SUCCESS, code, data)
