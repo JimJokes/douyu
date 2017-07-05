@@ -20,11 +20,6 @@ KEEP_ALIVE_INTERVAL_SECONDS = 45
 class Data:
     def __init__(self):
         self.time = now_time()
-        self.msg_type = None
-        self.nn = None
-        self.lv = None
-        self.txt = None
-        self.room = None
 
 
 class KeepAlive(threading.Thread):
@@ -112,7 +107,7 @@ class ChatRoom(threading.Thread):
 
         elif msg_type == 'bc_buy_deserve':
             data.nn = message.attr('sui')['nick']
-            data.cq = self.cq[message.attr('lev')]
+            data.gift = self.cq[message.attr('lev')]
             data.hits = message.attr('hits')
 
         elif msg_type == 'spbc':
