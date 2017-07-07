@@ -169,8 +169,8 @@ class LivePopup(Popup):
         f = min(115 / width, 85 / height)
         width = int(width * f)
         height = int(height * f)
-        self.img = img.resize((width, height), Image.ANTIALIAS)
-        self.img = ImageTk.PhotoImage(self.img)
+        img = img.resize((width, height), Image.ANTIALIAS)
+        self.img = ImageTk.PhotoImage(img)
         self.lebel_image.config(image=self.img)
 
     # 淡入前插入图片
