@@ -1,7 +1,7 @@
-import time
 import socket
 import threading
 
+from message import Message
 from packet import Packet
 from utils import UnmatchedLengthError, ReplyMessage
 
@@ -35,7 +35,7 @@ class Client:
     def send_msg(self, data):
         self.Lock.acquire()
         try:
-            self.sock.sendall(data)
+            self.sock.sendall(Packet(Message(data).to_text()).to_raw())
             return self._success_reply()
         except Exception as e:
             logger.exception(e)
