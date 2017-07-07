@@ -90,10 +90,3 @@ class CommandMessage:
     def __init__(self, msg_type, data=None):
         self.type = msg_type
         self.data = data
-
-
-i = 0
-j = 0
-room = None
-stars = []
-CheckVar = True
