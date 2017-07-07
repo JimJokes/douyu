@@ -6,8 +6,9 @@ from tkinter.font import Font
 from tkinter.messagebox import showwarning
 from queue import Queue
 
-import utils
+from room import ChatRoom
 from popup_win import LivePopup, StarPopup
+from roomInfo import RoomInfo
 
 star_file = os.path.join(os.getcwd(), 'starList.txt')
 if not os.path.exists(star_file):
@@ -33,6 +34,7 @@ class Window:
     gift_popups = {}
     out_ids = {}
 
+
     def __init__(self, master):
         self.master = master
         self.lock_text = tk.StringVar()
@@ -52,6 +54,7 @@ class Window:
     def style(self):
         s = ttk.Style()
         s.configure('tree.Treeview', font=('Microsoft YaHei', 11))
+        s.configure('info.Treeview', font=('Microsoft YaHei', 9))
 
     # 基础窗口
     def window(self):
@@ -129,23 +132,23 @@ class Window:
     def window_info(self, frame):
         info_notebook = ttk.Notebook(frame, padding=(0, 10, 10, 0))
 
-        info_tree = ttk.Treeview(columns=('1', '2'), show='tree')
-        info_tree.column('#0', width=0, stretch=0)
-        info_tree.column('1', stretch=0, width=80)
-        info_tree.column('2', stretch=0, width=154)
+        self.info_tree = ttk.Treeview(columns=('1', '2'), show='tree', style='info.Treeview')
+        self.info_tree.column('#0', width=0, stretch=0)
+        self.info_tree.column('1', stretch=0, width=80)
+        self.info_tree.column('2', stretch=0, width=154)
 
-        info_notebook.add(info_tree, text='主播信息：')
+        info_notebook.add(self.info_tree, text='主播信息：')
         info_notebook.place(relwidth=1, relheight=1)
 
-        info_tree.insert('', tk.END, values=('直播间标题：',))
-        info_tree.insert('', tk.END)
-        info_tree.insert('', tk.END, values=('主播：',))
-        info_tree.insert('', tk.END, values=('关注：',))
-        info_tree.insert('', tk.END, values=('体重：',))
-        info_tree.insert('', tk.END, values=('开播状态：',))
-        info_tree.insert('', tk.END, values=('人气：',))
-        info_tree.insert('', tk.END, values=('上次直播：',))
-        info_tree.insert('', tk.END, values=('更新时间：',))
+        self.info_tree.insert('', tk.END, iid='title1', values=('直播间标题：',))
+        self.info_tree.insert('', tk.END, iid='title2')
+        self.info_tree.insert('', tk.END, iid='name', values=('主播：',))
+        self.info_tree.insert('', tk.END, iid='follower', values=('关注：',))
+        self.info_tree.insert('', tk.END, iid='weight', values=('体重：',))
+        self.info_tree.insert('', tk.END, iid='status', values=('开播状态：',))
+        self.info_tree.insert('', tk.END, iid='online', values=('人气：',))
+        self.info_tree.insert('', tk.END, iid='start_time', values=('上次直播：',))
+        self.info_tree.insert('', tk.END, iid='now_time', values=('更新时间：',))
 
     # 直播间ID输入窗口
     def window_id(self, frame):
@@ -154,6 +157,7 @@ class Window:
 
         self.entry_id = ttk.Entry(frame)
         self.entry_id.place(relx=0.5, rely=0.1, height=20, relwidth=0.4)
+        self.entry_id.insert(tk.END, '196')
 
         self.start_button = ttk.Button(frame, text='连接')
         self.start_button.place(anchor=tk.NE, relx=0.4, rely=0.5, width=60)
@@ -208,8 +212,26 @@ class Window:
         iid = tree.insert('', tk.END, values=values)
         return iid
 
+    def insert_title(self, title):
+        font = Font(family='Microsoft YaHei', size=9)
+        title1 = None
+        length = len(title)
+        width = self.info_tree.column('2', width=None)-10
+        print(width)
+        title_width = font.measure(title)
+        while title_width > width:
+            length -= 1
+            title1 = title[:length]
+            title_width = font.measure(title1)
+
+        self.info_tree.set('title1', column='2', value=title1)
+        self.info_tree.set('title2', column='2', value=title[length:])
+
+    def insert_info(self, iid, value):
+        self.info_tree.set(iid, column='2', value=value)
+
     # 开播提醒弹出窗口
-    def live_popup(self, room=123, image='196_170622002601.jpg', title='【小缘】啵啵啵啵啵啵', status='直播中（已播112分钟）', name='123'):
+    def live_popup(self, room, image, title, status, name):
         popup = LivePopup(room, image, title, status, name)
         for win in self.popups:
             win.move_up(popup.height)
@@ -218,8 +240,8 @@ class Window:
         self.master.after(5000, self.fade_out, popup)
 
     # 关注提醒弹出窗口
-    def star_popup(self, room=123, name='讲哦发哈斯蒂芬', text='加个我哦啊大风会哦个'):
-        popup = StarPopup(room, name, text)
+    def star_popup(self, name, text):
+        popup = StarPopup(name, text)
         for win in self.popups:
             win.move_up(popup.height)
         popup.pop_up()
@@ -227,7 +249,7 @@ class Window:
         self.master.after(8000, self.fade_out, popup)
 
     # 礼物提醒弹出窗口
-    def gift_popup(self, name='和覅哦啊积分ID', text='我就热哦啊的房间啊', gift_id='123', hit='23'):
+    def gift_popup(self, name, text, gift_id, hit):
         gift_str = None
         if gift_id:
             gift_str = name + gift_id
@@ -265,20 +287,25 @@ class App(Window):
     starList = []
     i = 0
     iid = None
-    room = None
+    room = None  # 当前房间ID
+    live = False  # 开播状态
+    title = None  # 直播间标题
 
     def __init__(self, master):
         super(App, self).__init__(master)
+        self.master = master
+        self.add_event()
         self.result_q = Queue()
         self.gift_q = Queue()
+        self.info_q = Queue()
         self.read_stars()
-        self.event()
 
-    def event(self):
-        self.start_button.config(command=self.on)
-        self.stop_button.config(command=self.off)
-        self.lock_button.config(command=self.lock)
-        self.master.bind('<MESSAGE>', self._handle_message)
+    def add_event(self):
+        self.lock_button.configure(command=self.lock)
+        self.start_button.configure(command=self.on)
+        self.stop_button.configure(command=self.off)
+        self.master.bind('<<MESSAGE>>', self._handle_message)
+        self.master.bind('<<ROOMINFO>>', self._handle_roomInfo)
 
     # 开始连接事件
     def on(self):
@@ -286,11 +313,27 @@ class App(Window):
         if not room_id.isdigit():
             showwarning('直播间ID不正确', '请输入正确的直播间ID！')
         else:
+            if room_id != self.room:
+                self.room = room_id
+                self.danmaku_tree.delete(self.danmaku_tree.get_children())
+                self.i = 0
+            self.update_danmaku(room_id)
+            self.update_info(room_id)
             self.start_button.config(state=tk.DISABLED)
             self.stop_button.config(state=tk.ACTIVE)
 
+    def update_danmaku(self, room_id):
+        self.app = ChatRoom(room_id, self.result_q, self.gift_q, self.master)
+        self.app.start()
+
+    def update_info(self, room_id):
+        self.info = RoomInfo(room_id, self.gift_q, self.info_q, self.master)
+        self.info.start()
+
     # 断开连接事件
     def off(self):
+        self.app.quit()
+        self.info.quit()
         self.start_button.config(state=tk.ACTIVE)
         self.stop_button.config(state=tk.DISABLED)
 
@@ -303,23 +346,37 @@ class App(Window):
             self.CheckVar = True
             self.lock_text.set('锁屏')
 
-    # 从文件读取关注列表
-    def read_stars(self):
-        self.stars.delete(1.0, tk.END)
-        with open(star_file, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-            for line in lines:
-                self.starList.append(line.strip())
-                self.stars.insert(tk.END, line)
+    # 房间信息处理
+    def _handle_roomInfo(self):
+        room_info = self.info_q.get()
+        room_id = room_info['room_id']
+        name = room_info['owner_name']
 
-    # 把关注列表存入文件
-    def save_stars(self):
-        text = self.stars.get(1.0, tk.END)
-        with open(star_file, 'w', encoding='utf-8') as f:
-            for star in text.split('\n'):
-                if star.strip():
-                    f.write(star.strip()+'\n')
-        self.read_stars()
+        title = room_info['room_name']
+        if self.title and title != self.title:
+            self.star_popup('主播改标题了', title)
+        self.title = title
+        self.insert_title(title)
+
+        status = room_info['room_status']
+        if status == '2':
+            status = '下播了'
+            if self.live:
+                self.live = False
+        elif status == '1':
+            status = '直播中（已播%s分钟）' % room_info['minutes']
+            if not self.live:
+                image = os.path.join(os.getcwd(), 'room_%s.jpg' % room_id)
+                self.live_popup(room_id, image, title, status, name)
+                self.live = True
+
+        self.insert_info('name', name)
+        self.insert_info('follower', room_info['fans_num'])
+        self.insert_info('weight', room_info['owner_weight'])
+        self.insert_info('status', status)
+        self.insert_info('online', room_info['online'])
+        self.insert_info('start_time', room_info['start_time'])
+        self.insert_info('now_time', room_info['now_time'])
 
     # 消息处理
     def _handle_message(self):
@@ -327,11 +384,21 @@ class App(Window):
         msg_type = message.msg_type
         if msg_type in ('error', 'loginres'):
             self._update_danmaku(['', message.txt])
+
         elif msg_type == 'chatmsg':
             self._update_danmaku([message.nn, message.txt])
             if message.nn in self.starList:
-                self._update_star_danmaku([message.time, message.nn, message.txt])
-        # elif msg_type == ''
+                self._update_star_danmaku([message.time, message.nn, message.room, message.txt])
+
+        elif msg_type in ('dgb', 'bc_buy_deserve', 'spbc'):
+            if message.nn in self.starList:
+                txt = '赠送 %s %s' % (message.dn, message.gift)
+                self._update_gift([message.time, message.nn, message.room, txt, message.hits])
+
+        elif msg_type in ('ggbb', 'gpbc'):
+            if message.nn in self.starList:
+                txt = '抢了%s的%s个%s' % (message.dn, message.num, message.gift)
+                self._update_danmaku([message.time, message.nn, message.room, txt])
 
     # 更新全部弹幕
     def _update_danmaku(self, values):
@@ -360,10 +427,28 @@ class App(Window):
         if self.CheckVar:
             self.gift_tree.see(idd)
 
+    # 从文件读取关注列表
+    def read_stars(self):
+        self.stars.delete(1.0, tk.END)
+        with open(star_file, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            for line in lines:
+                self.starList.append(line.strip())
+                self.stars.insert(tk.END, line)
+
+    # 把关注列表存入文件
+    def save_stars(self):
+        text = self.stars.get(1.0, tk.END)
+        with open(star_file, 'w', encoding='utf-8') as f:
+            for star in text.split('\n'):
+                if star.strip():
+                    f.write(star.strip() + '\n')
+        self.read_stars()
+
 
 if __name__ == '__main__':
     root = tk.Tk()
-    Window(root)
+    App(root)
     root.mainloop()
     # top = tk.Tk()
     # app = LivePopup(top)
