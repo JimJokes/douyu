@@ -34,7 +34,6 @@ class Window:
     gift_popups = {}
     out_ids = {}
 
-
     def __init__(self, master):
         self.master = master
         self.lock_text = tk.StringVar()
@@ -178,10 +177,10 @@ class Window:
         star_notebook.add(frame_star, text='关注列表')
         star_notebook.place(relwidth=1, relheight=1)
 
-        save_button = ttk.Button(frame, text='保存', width=5, command=self.star_popup)
-        save_button.place(anchor=tk.NE, relx=0.6, rely=0)
-        reload_button = ttk.Button(frame, text='更新', width=5, command=self.live_popup)
-        reload_button.place(anchor=tk.NE, relx=0.8, rely=0)
+        self.save_button = ttk.Button(frame, text='保存', width=5)
+        self.save_button.place(anchor=tk.NE, relx=0.6, rely=0)
+        self.reload_button = ttk.Button(frame, text='更新', width=5)
+        self.reload_button.place(anchor=tk.NE, relx=0.8, rely=0)
 
     # 表格视图创建
     def tree_view(self, frame, columns, x=None, y=None, style='Treeview'):
@@ -204,7 +203,7 @@ class Window:
     # 表格插入并按文字长度调整格宽
     def insert(self, tree, values):
         for idx, value in enumerate(values):
-            value = value.replace('\n', ' ') if isinstance(value, str) else value
+            value = str(value).replace('\n', ' ')
             values[idx] = value
             text_w = self.font.measure(value)
             if tree.column(idx, width=None) < text_w:
@@ -214,10 +213,9 @@ class Window:
 
     def insert_title(self, title):
         font = Font(family='Microsoft YaHei', size=9)
-        title1 = None
+        title1 = title
         length = len(title)
         width = self.info_tree.column('2', width=None)-10
-        print(width)
         title_width = font.measure(title)
         while title_width > width:
             length -= 1
@@ -285,15 +283,15 @@ class Window:
 class App(Window):
     CheckVar = True
     starList = []
-    i = 0
     iid = None
-    room = None  # 当前房间ID
-    live = False  # 开播状态
-    title = None  # 直播间标题
+    room = None     # 当前房间ID
+    live = False    # 开播状态
+    title = None    # 直播间标题
 
     def __init__(self, master):
         super(App, self).__init__(master)
         self.master = master
+        self.master.iconbitmap(icon)
         self.add_event()
         self.result_q = Queue()
         self.gift_q = Queue()
@@ -304,6 +302,8 @@ class App(Window):
         self.lock_button.configure(command=self.lock)
         self.start_button.configure(command=self.on)
         self.stop_button.configure(command=self.off)
+        self.save_button.configure(command=self.save_stars)
+        self.reload_button.configure(command=self.read_stars)
         self.master.bind('<<MESSAGE>>', self._handle_message)
         self.master.bind('<<ROOMINFO>>', self._handle_roomInfo)
 
@@ -314,9 +314,10 @@ class App(Window):
             showwarning('直播间ID不正确', '请输入正确的直播间ID！')
         else:
             if room_id != self.room:
+                self.title = None
                 self.room = room_id
-                self.danmaku_tree.delete(self.danmaku_tree.get_children())
-                self.i = 0
+                for child in self.danmaku_tree.get_children():
+                    self.danmaku_tree.delete(child)
             self.update_danmaku(room_id)
             self.update_info(room_id)
             self.start_button.config(state=tk.DISABLED)
@@ -347,7 +348,7 @@ class App(Window):
             self.lock_text.set('锁屏')
 
     # 房间信息处理
-    def _handle_roomInfo(self):
+    def _handle_roomInfo(self, event):
         room_info = self.info_q.get()
         room_id = room_info['room_id']
         name = room_info['owner_name']
@@ -379,7 +380,7 @@ class App(Window):
         self.insert_info('now_time', room_info['now_time'])
 
     # 消息处理
-    def _handle_message(self):
+    def _handle_message(self, event):
         message = self.result_q.get()
         msg_type = message.msg_type
         if msg_type in ('error', 'loginres'):
@@ -389,16 +390,19 @@ class App(Window):
             self._update_danmaku([message.nn, message.txt])
             if message.nn in self.starList:
                 self._update_star_danmaku([message.time, message.nn, message.room, message.txt])
+                self.star_popup(message.nn, message.txt)
 
         elif msg_type in ('dgb', 'bc_buy_deserve', 'spbc'):
             if message.nn in self.starList:
                 txt = '赠送 %s %s' % (message.dn, message.gift)
                 self._update_gift([message.time, message.nn, message.room, txt, message.hits])
+                self.gift_popup(message.nn, txt, message.gift, message.hits)
 
         elif msg_type in ('ggbb', 'gpbc'):
             if message.nn in self.starList:
                 txt = '抢了%s的%s个%s' % (message.dn, message.num, message.gift)
-                self._update_danmaku([message.time, message.nn, message.room, txt])
+                self._update_gift([message.time, message.nn, message.room, txt])
+                self.star_popup(message.nn, txt)
 
     # 更新全部弹幕
     def _update_danmaku(self, values):
@@ -406,14 +410,13 @@ class App(Window):
         if self.CheckVar:
             self.danmaku_tree.see(iid)
 
-        if self.i == 0:
+        idx = self.danmaku_tree.index(iid)
+        if idx == 0:
             self.iid = iid
-        elif self.i > 3000:
+        elif idx > 3000:
             delete_iid = self.iid
             self.iid = self.danmaku_tree.next(delete_iid)
             self.danmaku_tree.delete(delete_iid)
-        else:
-            self.i += 1
 
     # 更新关注人弹幕
     def _update_star_danmaku(self, values):
