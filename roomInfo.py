@@ -1,11 +1,8 @@
 import os
 import time
 import asyncio
-from tkinter import Tk
-
 import aiohttp
 import threading
-import requests
 from html import unescape
 
 import logging
@@ -44,13 +41,14 @@ class RoomInfo(threading.Thread):
         self.alive.set()
 
     def run(self):
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         loop.run_until_complete(self.init(loop))
         loop.run_forever()
         loop.close()
 
     async def init(self, loop):
-        while self.alive:
+        while self.alive.is_set():
             async with aiohttp.ClientSession() as session:
                 room_info = await self.update_info(session)
                 gifts_info = await self.update_gift(session)
@@ -58,7 +56,7 @@ class RoomInfo(threading.Thread):
 
                 for key in self.status:
                     if key == 'now_time':
-                        self.status[key] = time.strftime('%m-%d %H:%M:%S', now)
+                        self.status[key] = time.strftime('%Y-%m-%d %H:%M:%S', now)
                     elif key == 'room_thumb':
                         self.status[key] = await self.update_pic(session, room_info['room_thumb'])
                     elif key == 'room_name':
