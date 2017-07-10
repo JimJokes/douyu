@@ -13,7 +13,6 @@ try:
 except ImportError:
     from client import Client
 
-RAW_BUFF_SIZE = 4096
 KEEP_ALIVE_INTERVAL_SECONDS = 45
 
 
@@ -27,12 +26,11 @@ class KeepAlive(threading.Thread):
         super(KeepAlive, self).__init__()
         self.client = client
         self.delay = delay
-        self.stop = False
+        self.alive = threading.Event()
+        self.alive.set()
 
     def run(self):
-        while True:
-            if self.stop:
-                raise SystemExit
+        while self.alive.is_set():
             # print('发送心跳验证')
             currents_ts = int(time.time())
             try:
@@ -43,6 +41,9 @@ class KeepAlive(threading.Thread):
             except Exception as e:
                 logger.exception(e)
             time.sleep(self.delay)
+
+    def quit(self):
+        self.alive.clear()
 
 
 def now_time():
@@ -65,12 +66,14 @@ class ChatRoom(threading.Thread):
         self.gift_q = gift_q
         self.root = root
         self.client = Client()
+        self.app = KeepAlive(self.client, KEEP_ALIVE_INTERVAL_SECONDS)
         self.alive = threading.Event()
         self.alive.set()
 
     def run(self):
         self._connect()
-        while self.alive:
+        self.keep_alive()
+        while self.alive.is_set():
             try:
                 self.gifts = self.gift_q.get(False)
             except Empty:
@@ -138,13 +141,13 @@ class ChatRoom(threading.Thread):
     def _receive(self):
         res = self.client.receive()
 
-        if res.type == ReplyMessage.ERROR:
-            self._quit_group()
+        if res.style == ReplyMessage.ERROR:
+            self._logout()
             self.client.disconnect()
             self._connect()
             return None
 
-        elif res.type == ReplyMessage.SUCCESS:
+        elif res.style == ReplyMessage.SUCCESS:
             data = res.data
             try:
                 buff = data.decode()
@@ -161,10 +164,10 @@ class ChatRoom(threading.Thread):
         while True:
             res = self.client.connect()
 
-            if res.type == ReplyMessage.SUCCESS:
+            if res.style == ReplyMessage.SUCCESS:
                 self._login()
                 break
-            elif res.type == ReplyMessage.ERROR:
+            elif res.style == ReplyMessage.ERROR:
                 if num < 30:
                     num += 1
                     continue
@@ -185,12 +188,16 @@ class ChatRoom(threading.Thread):
         data = {'type': 'joingroup', 'rid': self.room, 'gid': self.channel_id}
         res = self.client.send_msg(data)
 
-        if res == ReplyMessage.SUCCESS:
+        if res.style == ReplyMessage.SUCCESS:
             return '已连接到弹幕服务器，房间id：%s' % self.room
 
-    def _quit_group(self):
+    def _logout(self):
         data = {'type': 'logout'}
         self.client.send_msg(Packet(Message(data).to_text()).to_raw())
 
+    def keep_alive(self):
+        self.app.start()
+
     def quit(self):
+        self.app.quit()
         self.alive.clear()
