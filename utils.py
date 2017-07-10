@@ -87,11 +87,3 @@ class ReplyMessage:
         self.style = style
         self.code = code
         self.data = data
-
-
-class CommandMessage:
-    CONNECT, SEND, RECEIVE, CLOSE = range(4)
-
-    def __init__(self, msg_type, data=None):
-        self.type = msg_type
-        self.data = data
