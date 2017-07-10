@@ -1,3 +1,8 @@
+import sys
+
+non_bmp_map = dict.fromkeys(range(0x10000, sys.maxunicode+1), 0xfffd)
+
+
 def escape(value):
     value = str(value)
     value = value.replace('@', '@A')
@@ -66,7 +71,7 @@ def deserialize(raw):
             #     items = [elem for elem in v.split('/') if len(elem) > 0]
             #     v = [deserialize(unescape(item)) for item in items]
 
-        result[k] = v
+        result[k] = v.translate(non_bmp_map) if isinstance(v, str) else v
 
     return result
 
