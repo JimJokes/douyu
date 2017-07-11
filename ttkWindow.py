@@ -394,6 +394,10 @@ class App(Window):
                 self._update_star_danmaku([message.time, message.nn, message.room, message.txt])
                 self.star_popup(message.nn, message.txt)
 
+        elif msg_type == 'uenter':
+            if message.nn in self.starList:
+                self._update_star_danmaku([message.time, message.nn, message.room, message.txt])
+
         elif msg_type in ('dgb', 'bc_buy_deserve', 'spbc'):
             if message.nn in self.starList:
                 txt = '赠送 %s %s' % (message.dn, message.gift)
