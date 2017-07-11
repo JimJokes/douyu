@@ -43,11 +43,10 @@ class RoomInfo(threading.Thread):
     def run(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(self.init(loop))
-        loop.run_forever()
+        loop.run_until_complete(self.init())
         loop.close()
 
-    async def init(self, loop):
+    async def init(self):
         while self.alive.is_set():
             async with aiohttp.ClientSession() as session:
                 room_info = await self.update_info(session)
@@ -76,11 +75,14 @@ class RoomInfo(threading.Thread):
                     self.gifts[gift['id']] = gift['name']
 
             self.info_q.put(self.status)
-            self.root.event_generate('<<ROOMINFO>>')
+            try:
+                self.root.event_generate('<<ROOMINFO>>')
+            except RuntimeError:
+                pass
             self.gift_q.put(self.gifts)
             time.sleep(10)
 
-        loop.stop()
+        # loop.stop()
 
     async def update_info(self, session):
         res = await fetch_json(session, self.room_api)
