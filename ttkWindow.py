@@ -385,7 +385,7 @@ class App(Window):
     def _handle_message(self, event):
         message = self.result_q.get()
         msg_type = message.msg_type
-        if msg_type in ('error', 'loginres'):
+        if msg_type in ('con_error', 'loginres'):
             self._update_danmaku(['', message.txt])
 
         elif msg_type == 'chatmsg':
