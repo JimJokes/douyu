@@ -49,58 +49,77 @@ class RoomInfo(threading.Thread):
     async def init(self):
         while self.alive.is_set():
             async with aiohttp.ClientSession() as session:
-                room_info = await self.update_info(session)
-                gifts_info = await self.update_gift(session)
-                now = time.localtime()
+                res_room = await self.update_info(session)
+                res_gift = await self.update_gift(session)
 
-                for key in self.status:
-                    if key == 'now_time':
-                        self.status[key] = time.strftime('%Y-%m-%d %H:%M:%S', now)
-                    elif key == 'room_thumb':
-                        self.status[key] = await self.update_pic(session, room_info['room_thumb'])
-                    elif key == 'room_name':
-                        self.status[key] = unescape(room_info[key])
-                    elif key == 'minutes' and room_info['room_status'] == '1':
-                        start = room_info['start_time']
-                        start = time.strptime(start, '%Y-%m-%d %H:%M')
-                        minutes = int((time.mktime(now) - time.mktime(start)) / 60)
-                        self.status[key] = minutes
-                    elif key == 'minutes':
+                if res_room and res_room['error'] == 0:
+                    await self._handle_info(res_room, session)
+
+                if res_gift and res_gift['error'] == 0:
+                    gifts_info = res_gift['data']['prop_gift']
+                    try:
+                        gifts_info.extend(res_room['data']['gift'])
+                    except (KeyError, TypeError):
                         pass
-                    else:
-                        self.status[key] = room_info[key]
+                    for gift in gifts_info:
+                        self.gifts[gift['id']] = gift['name']
+                    self.gift_q.put(self.gifts)
 
-                gifts_info.extend(room_info['gift'])
-                for gift in gifts_info:
-                    self.gifts[gift['id']] = gift['name']
+            time.sleep(10)
 
+        # loop.stop()
+
+    async def _handle_info(self, res, session):
+        now = time.localtime()
+        room_info = res['data']
+        for key in self.status:
+            if key == 'now_time':
+                self.status[key] = time.strftime('%Y-%m-%d %H:%M:%S', now)
+            elif key == 'room_thumb':
+                self.status[key] = await self.update_pic(session, room_info['room_thumb'])
+            elif key == 'room_name':
+                self.status[key] = unescape(room_info[key])
+            elif key == 'minutes' and room_info['room_status'] == '1':
+                start = room_info['start_time']
+                start = time.strptime(start, '%Y-%m-%d %H:%M')
+                minutes = int((time.mktime(now) - time.mktime(start)) / 60)
+                self.status[key] = minutes
+            elif key == 'minutes':
+                pass
+            else:
+                self.status[key] = room_info[key]
             self.info_q.put(self.status)
             try:
                 self.root.event_generate('<<ROOMINFO>>')
             except RuntimeError:
                 pass
-            self.gift_q.put(self.gifts)
-            time.sleep(10)
-
-        # loop.stop()
 
     async def update_info(self, session):
-        res = await fetch_json(session, self.room_api)
-        room_info = res['data']
-        return room_info
+        try:
+            res = await fetch_json(session, self.room_api)
+            return res
+        except Exception as e:
+            logger.exception(e)
+            return None
 
     async def update_gift(self, session):
-        res = await fetch_json(session, GIFT_API)
-        gift_info = res['data']['prop_gift']
-        return gift_info
+        try:
+            res = await fetch_json(session, GIFT_API)
+            return res
+        except Exception as e:
+            logger.exception(e)
+            return None
 
     async def update_pic(self, session, url):
         if url == self.status['room_thumb']:
             pass
         else:
-            res = await fetch_read(session, url)
-            with open(self.room_thumb, 'wb') as f:
-                f.write(res)
+            try:
+                res = await fetch_read(session, url)
+                with open(self.room_thumb, 'wb') as f:
+                    f.write(res)
+            except Exception as e:
+                logger.exception(e)
         return url
 
     def quit(self):
