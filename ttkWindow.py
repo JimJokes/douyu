@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.font import Font
 from tkinter.messagebox import showwarning
-from queue import Queue
+from queue import Queue, LifoQueue
 
 from room import ChatRoom
 from popup_win import LivePopup, StarPopup
@@ -57,7 +57,7 @@ class Window:
 
     # 基础窗口
     def window(self):
-        frame = ttk.Frame()
+        frame = ttk.Frame(self.master)
         frame.pack(expand=1, fill=tk.BOTH)
 
         frame_left = ttk.Frame(frame)
@@ -294,8 +294,8 @@ class App(Window):
         self.master.iconbitmap(icon)
         self.add_event()
         self.result_q = Queue()
-        self.gift_q = Queue()
-        self.info_q = Queue()
+        self.gift_q = LifoQueue()
+        self.info_q = LifoQueue()
         self.read_stars()
 
     def add_event(self):
@@ -325,10 +325,12 @@ class App(Window):
 
     def update_danmaku(self, room_id):
         self.app = ChatRoom(room_id, self.result_q, self.gift_q, self.master)
+        self.app.setDaemon(True)
         self.app.start()
 
     def update_info(self, room_id):
         self.info = RoomInfo(room_id, self.gift_q, self.info_q, self.master)
+        self.info.setDaemon(True)
         self.info.start()
 
     # 断开连接事件
@@ -447,21 +449,3 @@ class App(Window):
                 if star.strip():
                     f.write(star.strip() + '\n')
         self.read_stars()
-
-
-if __name__ == '__main__':
-    root = tk.Tk()
-    App(root)
-    root.mainloop()
-    # top = tk.Tk()
-    # app = LivePopup(top)
-    # app.popup()
-    # app1 = StarPopup(top)
-    # app1.popup()
-    # app.move_up(app1.height)
-    # top.mainloop()
-    # top = tk.Tk()
-    # title = ttk.Label()
-    # print(title.winfo_class())
-    # top.destroy()
-    # top.mainloop()
