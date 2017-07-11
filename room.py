@@ -136,7 +136,10 @@ class ChatRoom(threading.Thread):
             data.num = message.attr('cnt')
 
         self.result_q.put(data)
-        self.root.event_generate('<<MESSAGE>>')
+        try:
+            self.root.event_generate('<<MESSAGE>>')
+        except RuntimeError:
+            pass
 
     def _receive(self):
         res = self.client.receive()
@@ -176,7 +179,10 @@ class ChatRoom(threading.Thread):
                     data.msg_type = 'error'
                     data.txt = '弹幕服务器连接错误，请重新连接！'
                     self.result_q.put(data)
-                    self.root.event_generate('<<MESSAGE>>')
+                    try:
+                        self.root.event_generate('<<MESSAGE>>')
+                    except RuntimeError:
+                        pass
 
             time.sleep(1)
 
@@ -196,6 +202,7 @@ class ChatRoom(threading.Thread):
         self.client.send_msg(Packet(Message(data).to_text()).to_raw())
 
     def keep_alive(self):
+        self.app.setDaemon(True)
         self.app.start()
 
     def quit(self):
