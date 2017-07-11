@@ -19,6 +19,7 @@ KEEP_ALIVE_INTERVAL_SECONDS = 45
 class Data:
     def __init__(self):
         self.time = now_time()
+        self.txt = ''
 
 
 class KeepAlive(threading.Thread):
@@ -82,24 +83,35 @@ class ChatRoom(threading.Thread):
             if message is None:
                 continue
             else:
-                self._handle_message(message)
+                data = self._handle_message(message)
+                if data:
+                    self.result_put(data)
+                else:
+                    continue
 
     def _handle_message(self, message):
+        # print(message.body)
         data = Data()
         msg_type = message.attr('type')
         data.msg_type = msg_type
         data.nn = message.attr('nn')
         data.room = message.attr('rid')
+        if msg_type == 'error':
+            logger.error(message.body)
+            return None
 
-        if msg_type == 'loginres':
+        elif msg_type == 'loginres':
             data.txt = self._join_group()
+            return data
 
         elif msg_type == 'chatmsg':
             data.lv = message.attr('level')
             data.txt = message.attr('txt')
+            return data
 
         elif msg_type == 'uenter':
             data.txt = '进入了直播间！'
+            return data
 
         elif msg_type == 'dgb':
             gfid = message.attr('gfid')
@@ -109,12 +121,14 @@ class ChatRoom(threading.Thread):
                 data.gift = '未知礼物%s' % gfid
             data.dn = '主播'
             data.hits = message.attr('hits') or 1
+            return data
 
         elif msg_type == 'bc_buy_deserve':
             data.nn = message.attr('sui')['nick']
             data.dn = '主播'
             data.gift = self.cq[message.attr('lev')]
             data.hits = message.attr('hits')
+            return data
 
         elif msg_type == 'spbc':
             data.nn = message.attr('sn')
@@ -122,19 +136,26 @@ class ChatRoom(threading.Thread):
             data.dn = message.attr('dn')
             data.room = message.attr('drid')
             data.hits = message.attr('gc')
+            return data
 
         elif msg_type == 'ggbb':
             data.nn = message.attr('dnk')
             data.dn = message.attr('snk')
             data.gift = '鱼丸'
             data.num = message.attr('sl')
+            return data
 
         elif msg_type == 'gpbc':
             data.nn = message.attr('dnk')
             data.dn = message.attr('snk')
             data.gift = message.attr('pnm')
             data.num = message.attr('cnt')
+            return data
 
+        else:
+            return None
+
+    def result_put(self, data):
         self.result_q.put(data)
         try:
             self.root.event_generate('<<MESSAGE>>')
@@ -176,7 +197,7 @@ class ChatRoom(threading.Thread):
                     continue
                 else:
                     num = 0
-                    data.msg_type = 'error'
+                    data.msg_type = 'con_error'
                     data.txt = '弹幕服务器连接错误，请重新连接！'
                     self.result_q.put(data)
                     try:
