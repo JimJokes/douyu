@@ -4,7 +4,6 @@ import threading
 from queue import Empty
 
 from message import Message
-from packet import Packet
 from utils import ReplyMessage
 
 logger = logging.getLogger('main.'+__name__)
@@ -73,7 +72,6 @@ class ChatRoom(threading.Thread):
 
     def run(self):
         self._connect()
-        self.keep_alive()
         while self.alive.is_set():
             try:
                 self.gifts = self.gift_q.get(False)
@@ -167,7 +165,6 @@ class ChatRoom(threading.Thread):
 
         if res.style == ReplyMessage.ERROR:
             self._logout()
-            self.client.disconnect()
             self._connect()
             return None
 
@@ -190,6 +187,7 @@ class ChatRoom(threading.Thread):
 
             if res.style == ReplyMessage.SUCCESS:
                 self._login()
+                self.keep_alive()
                 break
             elif res.style == ReplyMessage.ERROR:
                 if num < 30:
@@ -199,11 +197,7 @@ class ChatRoom(threading.Thread):
                     num = 0
                     data.msg_type = 'con_error'
                     data.txt = '弹幕服务器连接错误，请重新连接！'
-                    self.result_q.put(data)
-                    try:
-                        self.root.event_generate('<<MESSAGE>>')
-                    except RuntimeError:
-                        pass
+                    self.result_put(data)
 
             time.sleep(1)
 
@@ -220,12 +214,14 @@ class ChatRoom(threading.Thread):
 
     def _logout(self):
         data = {'type': 'logout'}
-        self.client.send_msg(Packet(Message(data).to_text()).to_raw())
+        self.client.send_msg(data)
+        self.app.quit()
+        self.client.disconnect()
 
     def keep_alive(self):
         self.app.setDaemon(True)
         self.app.start()
 
     def quit(self):
-        self.app.quit()
+        self._login()
         self.alive.clear()

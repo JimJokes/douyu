@@ -1,4 +1,3 @@
-import io
 import webbrowser
 import tkinter as tk
 from tkinter import ttk
@@ -184,7 +183,7 @@ class LivePopup(Popup):
             frame.bind('<Button-1>', self.open_browser)
 
     # 打开浏览器事件
-    def open_browser(self, *args):
+    def open_browser(self, event):
         webbrowser.open('www.douyu.com/%s' % self.room)
 
 
@@ -195,7 +194,7 @@ class StarPopup(Popup):
         self.hit_str = tk.StringVar()
         self.font = Font(family='Microsoft YaHei', size=11)
         self.font_bold = Font(family='Microsoft YaHei', size=11, weight='bold')
-        self.name = '%s' % name.strip()
+        self.name = name.strip()
         self.text = text.strip()
         self.hit = hit
         self.height = 30
