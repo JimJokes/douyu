@@ -255,7 +255,7 @@ class Window:
             popup = self.gift_popups[gift_str]
             popup.change_text(hit)
             self.master.after_cancel(self.out_ids[gift_str])
-            out_id = self.master.after(8000, self.fade_out, popup, gift_str)
+            out_id = self.master.after(5000, self.fade_out, popup, gift_str)
             self.out_ids[gift_str] = out_id
         else:
             popup = StarPopup(name, text, hit=hit)
@@ -264,7 +264,7 @@ class Window:
             popup.pop_up()
             self.popups.append(popup)
             self.gift_popups[gift_str] = popup
-            out_id = self.master.after(8000, self.fade_out, popup, gift_str)
+            out_id = self.master.after(5000, self.fade_out, popup, gift_str)
             self.out_ids[gift_str] = out_id
 
     # 窗口淡出
@@ -357,7 +357,7 @@ class App(Window):
 
         title = room_info['room_name']
         if self.title and title != self.title:
-            self.star_popup('主播改标题了', title)
+            self.star_popup('%s改标题了' % name, title)
         self.title = title
         self.insert_title(title)
 
