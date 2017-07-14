@@ -254,7 +254,7 @@ class StarPopup(Popup):
     def change_font_up(self, size):
         if size < 25:
             size += 2
-            self.label_num.config(font=Font(family='Microsoft YaHei', size=size))
+            self.label_num.config(font=Font(family='Microsoft YaHei', size=size, weight='bold'))
             self.after(10, self.change_font_up, size)
         else:
             self.after(10, self.change_font_down, size)
@@ -263,5 +263,5 @@ class StarPopup(Popup):
     def change_font_down(self, size):
         if size > 11:
             size -= 2
-            self.label_num.config(font=Font(family='Microsoft YaHei', size=size))
+            self.label_num.config(font=Font(family='Microsoft YaHei', size=size, weight='bold'))
             self.after(10, self.change_font_down, size)

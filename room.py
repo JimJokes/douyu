@@ -223,5 +223,5 @@ class ChatRoom(threading.Thread):
         self.app.start()
 
     def quit(self):
-        self._login()
+        self._logout()
         self.alive.clear()
