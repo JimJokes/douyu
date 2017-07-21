@@ -66,7 +66,6 @@ class ChatRoom(threading.Thread):
         self.gift_q = gift_q
         self.root = root
         self.client = Client()
-        self.app = KeepAlive(self.client, KEEP_ALIVE_INTERVAL_SECONDS)
         self.alive = threading.Event()
         self.alive.set()
 
@@ -86,6 +85,7 @@ class ChatRoom(threading.Thread):
                     self.result_put(data)
                 else:
                     continue
+        self._logout()
 
     def _handle_message(self, message):
         # print(message.body)
@@ -171,7 +171,7 @@ class ChatRoom(threading.Thread):
         elif res.style == ReplyMessage.SUCCESS:
             data = res.data
             try:
-                buff = data.decode()
+                buff = data.decode(errors='replace')
                 message = Message.sniff(buff)
                 return message
             except UnicodeDecodeError as e:
@@ -219,9 +219,9 @@ class ChatRoom(threading.Thread):
         self.client.disconnect()
 
     def keep_alive(self):
+        self.app = KeepAlive(self.client, KEEP_ALIVE_INTERVAL_SECONDS)
         self.app.setDaemon(True)
         self.app.start()
 
     def quit(self):
-        self._logout()
         self.alive.clear()
