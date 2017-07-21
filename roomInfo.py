@@ -84,6 +84,8 @@ class RoomInfo(threading.Thread):
                 start = time.strptime(start, '%Y-%m-%d %H:%M')
                 minutes = int((time.mktime(now) - time.mktime(start)) / 60)
                 self.status[key] = minutes
+            elif key == 'minutes':
+                pass
             else:
                 self.status[key] = room_info[key]
             self.info_q.put(self.status)
