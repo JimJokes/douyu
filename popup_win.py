@@ -195,7 +195,7 @@ class StarPopup(Popup):
         self.font = Font(family='Microsoft YaHei', size=11)
         self.font_bold = Font(family='Microsoft YaHei', size=11, weight='bold')
         self.name = name.strip()
-        self.text = text.strip()
+        self.text = text.strip()+'X' if hit else text.strip()
         self.hit = hit
         self.height = 30
         self.window()
