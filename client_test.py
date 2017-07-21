@@ -49,11 +49,12 @@ class Client:
             if len(header) == 12:
                 data_len = Packet.header_sniff(header)
                 data = self._receive_n_bytes(data_len)
+                # print(data)
                 return self._success_reply(data=data)
         except UnmatchedLengthError as e:
             logger.warning(e)
         except ConnectionAbortedError as e:
-            logger.exception(e)
+            logger.warning(e)
         except (ConnectionRefusedError, ConnectionResetError, socket.timeout) as e:
             logger.warning(e)
         except Exception as e:

@@ -53,7 +53,7 @@ class Client:
         except UnmatchedLengthError as e:
             logger.warning(e)
         except ConnectionAbortedError as e:
-            logger.exception(e)
+            logger.warning(e)
         except (ConnectionRefusedError, ConnectionResetError, socket.timeout) as e:
             logger.warning(e)
         except Exception as e:
