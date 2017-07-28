@@ -61,10 +61,10 @@ def deserialize(raw):
         if k not in ('txt', 'nn'):
             if v.find('@A=') > 0:
                 items = [elem for elem in v.split('/') if len(elem) > 0]
-                if len(items) == 1:
-                    v = deserialize(unescape(items[0]))
-                elif len(items) > 1:
-                    v = [deserialize(unescape(item)) for item in items]
+                # if len(items) == 1:
+                #     v = deserialize(unescape(items[0]))
+                # elif len(items) > 1:
+                v = [deserialize(unescape(item)) for item in items]
             elif v.find('@=') > 0:
                 v = deserialize(v)
             # if v.find('/') > 0:
@@ -87,3 +87,63 @@ class ReplyMessage:
         self.style = style
         self.code = code
         self.data = data
+
+lv = {i: 'LV%s.png' % i if i < 70 else 'LV%s.gif' % i for i in range(1, 121)}
+width_cq = {i: 36+i*8 for i in range(1, 11)}
+noble = {'1': 'knight.png',
+         '2': 'viscount.png',
+         '3': 'earl.png',
+         '4': 'duke.png',
+         '5': 'king.png',
+         '6': 'emperor.gif',
+         }
+color = {
+        '1': 'col_1',
+        '2': 'col_2',
+        '3': 'col_3',
+        '4': 'col_4',
+        '5': 'col_5',
+        '6': 'col_6',
+        }
+color_cq = {
+            '1': '#de744a',
+            '2': '#a8bac6',
+            '3': '#f1b738',
+            }
+bandage = {}
+for i in range(1, 31):
+    if i < 6:
+        bandage[i] = {
+            'bg': 'bandgebg_01.png',
+            'md': 'bandge_01.png'
+        }
+    elif i < 11:
+        bandage[i] = {
+            'bg': 'bandgebg_02.png',
+            'md': 'bandge_02.png'
+        }
+    elif i < 16:
+        bandage[i] = {
+            'bg': 'bandgebg_03.png',
+            'md': 'bandge_03.png'
+        }
+    elif i < 21:
+        bandage[i] = {
+            'bg': 'bandgebg_04.png',
+            'md': 'bandge_04.png'
+        }
+    elif i < 26:
+        bandage[i] = {
+            'bg': 'bandgebg_05.png',
+            'md': 'bandge_05.png'
+        }
+    elif i < 30:
+        bandage[i] = {
+            'bg': 'bandgebg_06.png',
+            'md': 'bandge_06.png'
+        }
+    else:
+        bandage[i] = {
+            'bg': 'bandgebg_07.png',
+            'md': 'bandge_07.png'
+        }
