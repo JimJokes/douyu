@@ -71,6 +71,8 @@ class Text(ROSText):
         self.tag_config('anchor', background='yellow')
         self.tag_config('red_name', foreground='#f03')
         self.tag_config('gold_name', foreground='gold')
+        self.tag_config('name', foreground='#2b94ff')
+        self.tag_config('col', foreground='#555')
         self.tag_config('col_1', foreground='#ff0000')
         self.tag_config('col_2', foreground='#1e87f0')
         self.tag_config('col_3', foreground='#7ac84b')
@@ -165,14 +167,18 @@ class Text(ROSText):
                 self.tag_add('red_name', idx1, idx2)
             elif item['eid'] == '1500000082':
                 self.tag_add('gold_name', idx1, idx2)
+            else:
+                self.tag_add('name', idx1, idx2)
 
     def handle_text(self, msg):
         idx1 = self.index(tk.INSERT)
         self.text_insert(msg.attr('txt'))
         idx2 = self.index(tk.INSERT)
         col = msg.attr('col')
-        if col:
+        if col and int(col) > 0:
             self.tag_add(color[col], idx1, idx2)
+        else:
+            self.tag_add('col', idx1, idx2)
 
     def text_insert(self, text):
         res = pattern.split(text)
@@ -260,7 +266,8 @@ class Tab(tk.Tk):
     def window(self):
         self.notebook = ttk.Notebook()
         frame = tk.Frame()
-        self.txt = Text(frame, self.static_img, self.lv_img, self.face_img)
+        font = Font(size=12)
+        self.txt = Text(frame, self.static_img, self.lv_img, self.face_img, font=font)
         bar = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=self.txt.yview)
         self.txt.config(yscrollcommand=bar.set)
         bar.pack(fill=tk.Y, side=tk.RIGHT)
