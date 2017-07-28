@@ -4,7 +4,7 @@ import encodings.idna
 from ttkWindow import App
 from logger import Logger
 
-__version__ = 'v2.0beta'
+__version__ = 'v2.0.1'
 
 if __name__ == '__main__':
     logger = Logger(name='main')
