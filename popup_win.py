@@ -41,7 +41,7 @@ class Popup(tk.Toplevel):
             self.after_cancel(self.move_id)
         self.move_y_down(self.width, self.height, self.x_src, interval)
 
-    # 窗口下移事件
+    # 窗口上移事件
     def move_y_up(self, width, height, x, interval):
         if self.y_src < self.y_des:
             self.y_src += 1
@@ -52,7 +52,7 @@ class Popup(tk.Toplevel):
             self.y_src = self.y_des
             self.move_id = None
 
-    # 窗口上移事件
+    # 窗口下移事件
     def move_y_down(self, width, height, x, interval):
         if self.y_src > self.y_des:
             self.y_src -= 1
