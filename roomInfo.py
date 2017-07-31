@@ -88,11 +88,11 @@ class RoomInfo(threading.Thread):
                 pass
             else:
                 self.status[key] = room_info[key]
-            self.info_q.put(self.status)
-            try:
-                self.root.event_generate('<<ROOMINFO>>')
-            except RuntimeError:
-                pass
+        self.info_q.put(self.status)
+        try:
+            self.root.event_generate('<<ROOMINFO>>')
+        except RuntimeError:
+            pass
 
     async def update_info(self, session):
         try:
