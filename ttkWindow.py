@@ -5,10 +5,12 @@ from tkinter import ttk
 from tkinter.font import Font
 from tkinter.messagebox import showwarning
 from queue import Queue, LifoQueue
+from PIL import Image, ImageTk
 
 from room import ChatRoom
 from popup_win import LivePopup, StarPopup
 from roomInfo import RoomInfo
+from Text import BarrageText
 
 star_file = os.path.join(os.getcwd(), 'starList.txt')
 if not os.path.exists(star_file):
@@ -17,8 +19,19 @@ if not os.path.exists(star_file):
 
 if getattr(sys, 'frozen', False):
     icon = os.path.join(getattr(sys, '_MEIPASS', '.'), 'icon.ico')
+    static_path = os.path.join(getattr(sys, '_MEIPASS', '.'), 'static')
 else:
     icon = os.path.join(os.getcwd(), 'icon.ico')
+    static_path = os.path.join(os.getcwd(), 'static')
+
+
+def load_image(path, ins):
+    files = os.listdir(path)
+    for file in files:
+        if file.endswith(('.png', '.gif')):
+            img = Image.open(path + '/' + file)
+            image = ImageTk.PhotoImage(img)
+            ins[file] = image
 
 
 # 自动窗口缩放事件
@@ -33,14 +46,18 @@ class Window:
     popups = []
     gift_popups = {}
     out_ids = {}
+    face_img = {}
+    static_img = {}
+    lv_img = {}
 
     def __init__(self, master):
         self.master = master
+        self.load_static()
+        self.position()
         self.lock_text = tk.StringVar()
         self.style()
         self.font = Font(family='Microsoft YaHei', size=11)
         self.window()
-        self.position()
 
     def position(self):
         screen_width = self.master.winfo_screenwidth()
@@ -48,6 +65,11 @@ class Window:
         x = int(screen_width/2-500)
         y = int(screen_height/2-300)
         self.master.geometry('1000x600+%s+%s' % (x, y))
+
+    def load_static(self):
+        load_image(os.path.join(static_path, 'face'), self.face_img)
+        load_image(static_path, self.static_img)
+        load_image(os.path.join(static_path, 'LV'), self.lv_img)
 
     # 窗口风格定义
     def style(self):
@@ -65,7 +87,7 @@ class Window:
         self.window_left(frame_left)
 
         frame_right = ttk.Frame(frame, width=250)
-        frame_right.grid_propagate(0)
+        # frame_right.grid_propagate(0)
         frame_right.place(anchor=tk.NE, relx=1, rely=0, relheight=1)
         self.window_right(frame_right)
         # self.update()
@@ -76,9 +98,11 @@ class Window:
         notebook = ttk.Notebook(frame, padding=(10, 10, 10, 10))
 
         frame_danmaku = ttk.Frame()
-        self.danmaku_tree = self.tree_view(frame_danmaku, ('昵称', '弹幕'), x=1, y=1, style='tree.Treeview')
+        # self.danmaku_tree = self.tree_view(frame_danmaku, ('昵称', '弹幕'), x=1, y=1, style='tree.Treeview')
         # danmaku_tree.column('等级', width=55, stretch=0)
-        self.danmaku_tree.column('昵称', width=100, stretch=0)
+        # self.danmaku_tree.column('昵称', width=100, stretch=0)
+        self.barrage = BarrageText(frame_danmaku, self.static_img, self.lv_img, self.face_img)
+        self.barrage.pack(fill=tk.BOTH, expand=1)
 
         notebook.add(frame_danmaku, text='弹幕')
 
@@ -97,10 +121,12 @@ class Window:
         frame_top = ttk.Frame(frame)
         frame_top.place(relwidth=1, relheight=0.6, rely=0)
 
-        self.text_tree = self.tree_view(frame_top, ('时间', '昵称', '直播间', '弹幕'), x=1, y=1, style='tree.Treeview')
-        self.text_tree.column('时间', stretch=0, width=160)
-        self.text_tree.column('昵称', stretch=0, width=100)
-        self.text_tree.column('直播间', stretch=0, width=50)
+        # self.text_tree = self.tree_view(frame_top, ('时间', '昵称', '直播间', '弹幕'), x=1, y=1, style='tree.Treeview')
+        # self.text_tree.column('时间', stretch=0, width=160)
+        # self.text_tree.column('昵称', stretch=0, width=100)
+        # self.text_tree.column('直播间', stretch=0, width=50)
+        self.star_barrage = BarrageText(frame_top, self.static_img, self.lv_img, self.face_img)
+        self.star_barrage.pack(fill=tk.BOTH, expand=1)
 
         frame_bottom = ttk.Frame(frame)
         frame_bottom.place(relwidth=1, relheight=0.4, rely=0.6)
@@ -222,8 +248,8 @@ class Window:
             title1 = title[:length]
             title_width = font.measure(title1)
 
-        self.info_tree.set('title1', column='2', value=title1)
-        self.info_tree.set('title2', column='2', value=title[length:])
+        self.insert_info('title1', title1)
+        self.insert_info('title2', title[length:])
 
     def insert_info(self, iid, value):
         self.info_tree.set(iid, column='2', value=value)
@@ -270,8 +296,7 @@ class Window:
     # 窗口淡出
     def fade_out(self, win, gift_str=None):
         if gift_str:
-            self.gift_popups.pop(gift_str)
-            self.out_ids.pop(gift_str)
+            del self.gift_popups[gift_str], self.out_ids[gift_str]
         win.pop_down()
         idx = self.popups.index(win)
         if idx > 0:
@@ -283,7 +308,7 @@ class Window:
 class App(Window):
     CheckVar = True
     starList = []
-    iid = None
+    num = 0
     room = None     # 当前房间ID
     live = False    # 开播状态
     title = None    # 直播间标题
@@ -316,8 +341,8 @@ class App(Window):
             if room_id != self.room:
                 self.title = None
                 self.room = room_id
-                for child in self.danmaku_tree.get_children():
-                    self.danmaku_tree.delete(child)
+                self.barrage.delete(1.0, tk.END)
+                self.num = 0
             self.update_danmaku(room_id)
             self.update_info(room_id)
             self.start_button.config(state=tk.DISABLED)
@@ -384,51 +409,61 @@ class App(Window):
     # 消息处理
     def _handle_message(self, event):
         message = self.result_q.get()
-        msg_type = message.msg_type
+        msg_type = message.attr('type')
+        name = message.attr('nn')
         if msg_type in ('con_error', 'loginres'):
-            self._update_danmaku(['', message.txt])
+            self._update_danmaku(message, insert=1)
 
         elif msg_type == 'chatmsg':
-            self._update_danmaku([message.nn, message.txt])
-            if message.nn in self.starList:
-                self._update_star_danmaku([message.time, message.nn, message.room, message.txt])
-                self.star_popup(message.nn, message.txt)
+            tag = None
+            if name in self.starList:
+                tag = 1
+                self._update_star_danmaku(message)
+                self.star_popup(name, message.attr('txt'))
+
+            self._update_danmaku(message, tag)
 
         elif msg_type == 'uenter':
-            if message.nn in self.starList:
-                self._update_star_danmaku([message.time, message.nn, message.room, message.txt])
+            if name in self.starList:
+                self._update_star_danmaku(message, enter=1)
+                self.star_popup(name, message.attr('txt'))
 
         elif msg_type in ('dgb', 'bc_buy_deserve', 'spbc'):
-            if message.nn in self.starList:
-                txt = '赠送 %s %s' % (message.dn, message.gift)
-                self._update_gift([message.time, message.nn, message.room, txt, message.hits])
-                self.gift_popup(message.nn, txt, message.gift, message.hits)
+            if name in self.starList:
+                txt = '赠送 %s %s' % (message.attr('dn'), message.attr('gift'))
+                self._update_gift([message.attr('time'), name, message.attr('room'), txt, message.attr('hits')])
+                self.gift_popup(name, txt, message.attr('gift'), message.attr('hits'))
 
         elif msg_type in ('ggbb', 'gpbc'):
-            if message.nn in self.starList:
-                txt = '抢了%s的%s个%s' % (message.dn, message.num, message.gift)
-                self._update_gift([message.time, message.nn, message.room, txt])
-                self.star_popup(message.nn, txt)
+            if name in self.starList:
+                txt = '抢了%s的%s个%s' % (message.attr('dn'), message.attr('num'), message.attr('gift'))
+                self._update_gift([message.attr('time'), name, message.attr('room'), txt])
+                self.star_popup(name, txt)
 
     # 更新全部弹幕
-    def _update_danmaku(self, values):
-        iid = self.insert(self.danmaku_tree, values)
+    def _update_danmaku(self, msg, tag=None, insert=None):
+        if self.num < 3000:
+            self.num += 1
+        else:
+            self.barrage.delete(1.0, 2.0)
+        if insert:
+            self.barrage.insert(tk.END, msg.attr('txt'))
+        else:
+            self.barrage.handle_message(msg, tag)
         if self.CheckVar:
-            self.danmaku_tree.see(iid)
-
-        idx = self.danmaku_tree.index(iid)
-        if idx == 0:
-            self.iid = iid
-        elif idx > 3000:
-            delete_iid = self.iid
-            self.iid = self.danmaku_tree.next(delete_iid)
-            self.danmaku_tree.delete(delete_iid)
+            self.barrage.see(tk.END)
+        self.barrage.insert(tk.END, '\n')
 
     # 更新关注人弹幕
-    def _update_star_danmaku(self, values):
-        iid = self.insert(self.text_tree, values)
+    def _update_star_danmaku(self, msg, enter=None):
+        self.star_barrage.insert(tk.END, msg.attr('time')+' ')
+        if enter:
+            self.star_barrage.insert(tk.END, msg.attr('nn')+msg.attr('txt'))
+        else:
+            self.star_barrage.handle_message(msg)
         if self.CheckVar:
-            self.text_tree.see(iid)
+            self.star_barrage.see(tk.END)
+        self.star_barrage.insert(tk.END, '\n')
 
     # 更新关注人礼物
     def _update_gift(self, values):
