@@ -1,0 +1,7 @@
+datas/
+datas-old/
+log/
+.idea/
+__pycache__/
+api/
+room_*.jpg
