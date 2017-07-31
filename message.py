@@ -21,8 +21,16 @@ class Message:
         try:
             result = self.body[attr_name]
             return result
-        except KeyError as e:
+        except KeyError:
             return None
+
+    def set_attr(self, attr_name, value):
+        if self.body is None:
+            self.body = {}
+        try:
+            self.body[attr_name] = value
+        except TypeError:
+            return
 
     @staticmethod
     def sniff(buff):
