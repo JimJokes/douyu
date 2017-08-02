@@ -75,7 +75,7 @@ class BarrageText(ROSText):
         self.tag_config('col_5', foreground='#9b39f4')
         self.tag_config('col_6', foreground='#ff69b4')
 
-    def handle_message(self, message, tag=None):
+    def handle_message(self, message, tag=False):
         images = []
         name = 'name'
         el = message.attr('el')
@@ -94,7 +94,6 @@ class BarrageText(ROSText):
                 elif item['eid'] == '1500000082':
                     name = 'gold_name'
 
-        idx1 = self.index(tk.INSERT)
         self.handle_role(message)
         self.handle_noble(message)
         self.handle_cq(message, tag)
@@ -103,9 +102,13 @@ class BarrageText(ROSText):
         self.handle_level(message)
         self.handle_name(message, name)
         self.handle_text(message)
-        idx2 = self.index(tk.INSERT)
-        if tag:
-            self.tag_add('anchor', idx1, idx2)
+
+    def handle_uenter(self, message):
+        self.handle_noble(message)
+        self.handle_cq(message)
+        self.handle_level(message)
+        self.handle_name(message, 'name', enter=True)
+        self.insert(tk.END, '进入直播间！')
 
     def handle_role(self, msg):
         role = None
@@ -116,16 +119,22 @@ class BarrageText(ROSText):
         elif msg.attr('rg') == '5':
             role = 'anchor'
         if role:
-            self.image_create(tk.END, image=self.static_img['%s.png' % role])
+            try:
+                self.image_create(tk.END, image=self.static_img['%s.png' % role])
+            except KeyError:
+                pass
             # self.insert(tk.END, ' ')
 
     def handle_noble(self, msg):
         nl = msg.attr('nl')
         if nl:
-            self.image_create(tk.END, image=self.static_img[noble[nl]])
+            try:
+                self.image_create(tk.END, image=self.static_img[noble[nl]])
+            except KeyError:
+                pass
             # self.insert(tk.END, ' ')
 
-    def handle_cq(self, msg, tag):
+    def handle_cq(self, msg, tag=False):
         dlv = msg.attr('dlv')
         dc = msg.attr('dc')
         bdlv = msg.attr('bdlv')
@@ -133,7 +142,10 @@ class BarrageText(ROSText):
             self.window_create(tk.END, window=self.cq(dlv, dc, tag))
             # self.insert(tk.END, ' ')
         elif bdlv and int(bdlv) > 0:
-            self.image_create(tk.END, image=self.static_img['cq_other.png'])
+            try:
+                self.image_create(tk.END, image=self.static_img['cq_other.png'])
+            except KeyError:
+                pass
             # self.insert(tk.END, ' ')
 
     def handle_madel(self, images):
@@ -141,7 +153,7 @@ class BarrageText(ROSText):
             self.image_create(tk.END, image=image)
             # self.insert(tk.END, ' ')
 
-    def handle_bandge(self, msg, tag):
+    def handle_bandge(self, msg, tag=False):
         bnn = msg.attr('bnn')
         bl = msg.attr('bl')
         if bnn and bl:
@@ -151,42 +163,42 @@ class BarrageText(ROSText):
     def handle_level(self, msg):
         ol = msg.attr('ol')
         level = msg.attr('level')
-        if ol and int(ol) > 0:
-            self.image_create(tk.END, image=self.lv_img['anchorLV%s.png' % ol])
-            # self.insert(tk.END, ' ')
-        elif level and int(level) > 0:
-            self.image_create(tk.END, image=self.lv_img[lv[int(level)]])
-            # self.insert(tk.END, ' ')
+        try:
+            if ol and int(ol) > 0:
+                self.image_create(tk.END, image=self.lv_img['anchorLV%s.png' % ol])
+                # self.insert(tk.END, ' ')
+            elif level and int(level) > 0:
+                self.image_create(tk.END, image=self.lv_img[lv[int(level)]])
+                # self.insert(tk.END, ' ')
+        except KeyError:
+            pass
 
-    def handle_name(self, msg, name):
-        idx1 = self.index(tk.INSERT)
-        self.insert(tk.END, msg.attr('nn') + '：')
-        idx2 = self.index(tk.INSERT)
-        self.tag_add(name, idx1, idx2)
+    def handle_name(self, msg, name, enter=False):
+        self.insert(tk.END, msg.attr('nn'), (name,))
+        if not enter:
+            self.insert(tk.END, '：', (name,))
 
     def handle_text(self, msg):
-        idx1 = self.index(tk.INSERT)
-        self.text_insert(msg.attr('txt'))
-        idx2 = self.index(tk.INSERT)
         col = msg.attr('col')
         if col and 7 > int(col) > 0:
-            self.tag_add(color[col], idx1, idx2)
+            tag = color[col]
         else:
-            self.tag_add('col', idx1, idx2)
+            tag = 'col'
+        self.text_insert(msg.attr('txt'), tag)
 
-    def text_insert(self, text):
+    def text_insert(self, text, tag):
         res = pattern.split(text)
         for idx, item in enumerate(res):
             if idx % 2 == 0 and item:
-                self.insert(tk.END, item)
+                self.insert(tk.END, item, (tag, ))
             elif idx % 2 == 1 and item:
                 try:
                     image = self.face_img['%s.png' % item]
                     self.image_create(tk.END, image=image)
                 except KeyError:
-                    self.insert(tk.END, '[emot:dy%s]' % item)
+                    self.insert(tk.END, '[emot:dy%s]' % item, (tag, ))
 
-    def cq(self, dlv, dc, tag):
+    def cq(self, dlv, dc, tag=False):
         digit = len(str(dc))
         width = width_cq[digit]
 
@@ -194,17 +206,23 @@ class BarrageText(ROSText):
         if tag:
             canvas.configure(bg='yellow')
         canvas.create_rectangle(11, 2, width+1, 19, fill=color_cq[dlv], width=0)
-        canvas.create_image(0, 0, anchor=tk.NW, image=self.static_img['cq_no0%s.png' % dlv])
+        try:
+            canvas.create_image(0, 0, anchor=tk.NW, image=self.static_img['cq_no0%s.png' % dlv])
+        except KeyError:
+            pass
         canvas.create_text(width/2+10, 10, fill='white', text='x%s' % dc)
         return canvas
 
-    def bandge(self, bl, bnn, tag):
+    def bandge(self, bl, bnn, tag=False):
         bl = int(bl)
         canvas = tk.Canvas(self, bg='white', borderwidth=0, width=62, height=24, highlightthickness=0)
         if tag:
             canvas.configure(bg='yellow')
-        canvas.create_image(0, 4, anchor=tk.NW, image=self.static_img[bandage[bl]['bg']])
-        canvas.create_text(20, 12, fill='white', text=bnn)
-        canvas.create_image(40, 0, anchor=tk.NW, image=self.static_img[bandage[bl]['md']])
-        canvas.create_image(51, 12, image=self.lv_img['%s.png' % bl])
+        try:
+            canvas.create_image(0, 4, anchor=tk.NW, image=self.static_img[bandage[bl]['bg']])
+            canvas.create_text(20, 12, fill='white', text=bnn)
+            canvas.create_image(40, 0, anchor=tk.NW, image=self.static_img[bandage[bl]['md']])
+            canvas.create_image(51, 12, image=self.lv_img['%s.png' % bl])
+        except KeyError:
+            pass
         return canvas
