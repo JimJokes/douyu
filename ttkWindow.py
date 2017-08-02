@@ -95,7 +95,7 @@ class Window:
 
     # 左侧弹幕和关注基础窗口
     def window_left(self, frame):
-        notebook = ttk.Notebook(frame, padding=(10, 10, 10, 10))
+        self.notebook = ttk.Notebook(frame, padding=(10, 10, 10, 10))
 
         frame_danmaku = ttk.Frame()
         # self.danmaku_tree = self.tree_view(frame_danmaku, ('昵称', '弹幕'), x=1, y=1, style='tree.Treeview')
@@ -104,13 +104,14 @@ class Window:
         self.barrage = BarrageText(frame_danmaku, self.static_img, self.lv_img, self.face_img)
         self.barrage.pack(fill=tk.BOTH, expand=1)
 
-        notebook.add(frame_danmaku, text='弹幕')
+        self.notebook.add(frame_danmaku, text='弹幕')
 
-        frame_star = ttk.Frame()
-        self.window_star(frame_star)
-        notebook.add(frame_star, text='关注')
+        self.frame_star = ttk.Frame()
+        self.window_star(self.frame_star)
+        self.notebook.add(self.frame_star, text='关注', compound=tk.RIGHT)
 
-        notebook.place(relheight=1, relwidth=1)
+        self.notebook.place(relheight=1, relwidth=1)
+        self.notebook.bind('<<NotebookTabChanged>>', self.old)
 
         self.lock_button = ttk.Button(frame, textvariable=self.lock_text, width=5)
         self.lock_text.set('锁屏')
@@ -207,6 +208,14 @@ class Window:
         self.save_button.place(anchor=tk.NE, relx=0.6, rely=0)
         self.reload_button = ttk.Button(frame, text='更新', width=5)
         self.reload_button.place(anchor=tk.NE, relx=0.8, rely=0)
+
+    def old(self, event):
+        if self.notebook.select() == str(self.frame_star):
+            self.notebook.tab(1, image='')
+
+    def new(self):
+        if self.notebook.select() != str(self.frame_star):
+            self.notebook.tab(1, image=self.static_img['new.png'])
 
     # 表格视图创建
     def tree_view(self, frame, columns, x=None, y=None, style='Treeview'):
@@ -412,12 +421,12 @@ class App(Window):
         msg_type = message.attr('type')
         name = message.attr('nn')
         if msg_type in ('con_error', 'loginres'):
-            self._update_danmaku(message, insert=1)
+            self._update_danmaku(message, insert=True)
 
         elif msg_type == 'chatmsg':
-            tag = None
+            tag = False
             if name in self.starList:
-                tag = 1
+                tag = True
                 self._update_star_danmaku(message)
                 self.star_popup(name, message.attr('txt'))
 
@@ -425,7 +434,7 @@ class App(Window):
 
         elif msg_type == 'uenter':
             if name in self.starList:
-                self._update_star_danmaku(message, enter=1)
+                self._update_star_danmaku(message, enter=True)
                 self.star_popup(name, message.attr('txt'))
 
         elif msg_type in ('dgb', 'bc_buy_deserve', 'spbc'):
@@ -441,7 +450,8 @@ class App(Window):
                 self.star_popup(name, txt)
 
     # 更新全部弹幕
-    def _update_danmaku(self, msg, tag=None, insert=None):
+    def _update_danmaku(self, msg, tag=False, insert=False):
+        idx1 = self.barrage.index(tk.INSERT)
         if self.num < 3000:
             self.num += 1
         else:
@@ -453,12 +463,16 @@ class App(Window):
         if self.CheckVar:
             self.barrage.see(tk.END)
         self.barrage.insert(tk.END, '\n')
+        idx2 = self.barrage.index(tk.INSERT)
+        if tag:
+            self.barrage.tag_add('anchor', idx1, idx2)
 
     # 更新关注人弹幕
-    def _update_star_danmaku(self, msg, enter=None):
+    def _update_star_danmaku(self, msg, enter=False):
+        self.new()
         self.star_barrage.insert(tk.END, msg.attr('time')+' ')
         if enter:
-            self.star_barrage.insert(tk.END, msg.attr('nn')+msg.attr('txt'))
+            self.star_barrage.handle_uenter(msg)
         else:
             self.star_barrage.handle_message(msg)
         if self.CheckVar:
@@ -467,6 +481,7 @@ class App(Window):
 
     # 更新关注人礼物
     def _update_gift(self, values):
+        self.new()
         idd = self.insert(self.gift_tree, values)
         if self.CheckVar:
             self.gift_tree.see(idd)
