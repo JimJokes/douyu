@@ -1,5 +1,6 @@
 import os
 import sys
+import zipfile
 import tkinter as tk
 from tkinter import ttk
 from tkinter.font import Font
@@ -12,6 +13,9 @@ from popup_win import LivePopup, StarPopup
 from roomInfo import RoomInfo
 from Text import BarrageText
 
+import logging
+logger = logging.getLogger('main.'+__name__)
+
 star_file = os.path.join(os.getcwd(), 'starList.txt')
 if not os.path.exists(star_file):
     with open(star_file, 'w', encoding='utf-8'):
@@ -19,19 +23,17 @@ if not os.path.exists(star_file):
 
 if getattr(sys, 'frozen', False):
     icon = os.path.join(getattr(sys, '_MEIPASS', '.'), 'icon.ico')
-    static_path = os.path.join(getattr(sys, '_MEIPASS', '.'), 'static')
+    staticZip = os.path.join(getattr(sys, '_MEIPASS', '.'), 'static.zip')
 else:
     icon = os.path.join(os.getcwd(), 'icon.ico')
-    static_path = os.path.join(os.getcwd(), 'static')
+    staticZip = os.path.join(os.getcwd(), 'static.zip')
 
 
-def load_image(path, ins):
-    files = os.listdir(path)
-    for file in files:
-        if file.endswith(('.png', '.gif')):
-            img = Image.open(path + '/' + file)
-            image = ImageTk.PhotoImage(img)
-            ins[file] = image
+def load_image(zip_file, file, ins):
+    with zip_file.open(file) as img:
+        image = Image.open(img)
+        image_tk = ImageTk.PhotoImage(image)
+        ins[os.path.split(file)[1]] = image_tk
 
 
 # 自动窗口缩放事件
@@ -67,9 +69,17 @@ class Window:
         self.master.geometry('1000x600+%s+%s' % (x, y))
 
     def load_static(self):
-        load_image(os.path.join(static_path, 'face'), self.face_img)
-        load_image(static_path, self.static_img)
-        load_image(os.path.join(static_path, 'LV'), self.lv_img)
+        try:
+            with zipfile.ZipFile(staticZip, 'r') as staticFile:
+                for file in staticFile.namelist():
+                    if 'face' in file:
+                        load_image(staticFile, file, self.face_img)
+                    elif 'LV' in file:
+                        load_image(staticFile, file, self.lv_img)
+                    else:
+                        load_image(staticFile, file, self.static_img)
+        except Exception as e:
+            logger.exception(e)
 
     # 窗口风格定义
     def style(self):
@@ -119,7 +129,7 @@ class Window:
 
     # 左侧关注窗口
     def window_star(self, frame):
-        frame_top = ttk.Frame(frame)
+        frame_top = ttk.Frame(frame, padding=(0, 0, 0, 10))
         frame_top.place(relwidth=1, relheight=0.6, rely=0)
 
         # self.text_tree = self.tree_view(frame_top, ('时间', '昵称', '直播间', '弹幕'), x=1, y=1, style='tree.Treeview')
@@ -132,11 +142,17 @@ class Window:
         frame_bottom = ttk.Frame(frame)
         frame_bottom.place(relwidth=1, relheight=0.4, rely=0.6)
 
-        self.gift_tree = self.tree_view(frame_bottom, ('时间', '昵称', '直播间', '礼物', '连击'), y=1, style='tree.Treeview')
-        self.gift_tree.column('时间', stretch=0, width=160)
-        self.gift_tree.column('昵称', stretch=0, width=100)
-        self.gift_tree.column('直播间', stretch=0, width=50)
-        self.gift_tree.column('连击', stretch=0, width=50)
+        self.star_gift = tk.Text(frame_bottom, font=Font(size=11))
+        bar = ttk.Scrollbar(frame_bottom, orient=tk.VERTICAL, command=self.star_gift.yview)
+        self.star_gift.config(yscrollcommand=bar.set)
+        bar.pack(fill=tk.Y, side=tk.RIGHT)
+        self.star_gift.pack(fill=tk.BOTH, expand=1)
+
+        # self.gift_tree = self.tree_view(frame_bottom, ('时间', '昵称', '直播间', '礼物', '连击'), y=1, style='tree.Treeview')
+        # self.gift_tree.column('时间', stretch=0, width=160)
+        # self.gift_tree.column('昵称', stretch=0, width=100)
+        # self.gift_tree.column('直播间', stretch=0, width=50)
+        # self.gift_tree.column('连击', stretch=0, width=50)
 
     # 右侧基础窗口
     def window_right(self, frame):
@@ -216,35 +232,6 @@ class Window:
     def new(self):
         if self.notebook.select() != str(self.frame_star):
             self.notebook.tab(1, image=self.static_img['new.png'])
-
-    # 表格视图创建
-    def tree_view(self, frame, columns, x=None, y=None, style='Treeview'):
-        tree = ttk.Treeview(frame, columns=columns, show='headings', style=style)
-        if x:
-            xbar = ttk.Scrollbar(frame, orient=tk.HORIZONTAL, command=tree.xview)
-            tree.config(xscrollcommand=xbar.set)
-            xbar.pack(fill=tk.X, side=tk.BOTTOM)
-        if y:
-            ybar = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=tree.yview)
-            tree.config(yscrollcommand=ybar.set)
-            ybar.pack(fill=tk.Y, side=tk.RIGHT)
-
-        for idx, col in enumerate(columns):
-            tree.heading(idx, text=col)
-
-        tree.pack(fill=tk.BOTH, expand=1)
-        return tree
-
-    # 表格插入并按文字长度调整格宽
-    def insert(self, tree, values):
-        for idx, value in enumerate(values):
-            value = str(value).replace('\n', ' ')
-            values[idx] = value
-            text_w = self.font.measure(value)
-            if tree.column(idx, width=None) < text_w:
-                tree.column(idx, width=text_w + 10)
-        iid = tree.insert('', tk.END, values=values)
-        return iid
 
     def insert_title(self, title):
         font = Font(family='Microsoft YaHei', size=9)
@@ -439,14 +426,16 @@ class App(Window):
 
         elif msg_type in ('dgb', 'bc_buy_deserve', 'spbc'):
             if name in self.starList:
-                txt = '赠送 %s %s' % (message.attr('dn'), message.attr('gift'))
-                self._update_gift([message.attr('time'), name, message.attr('room'), txt, message.attr('hits')])
+                txt = '赠送 %s(ID:%s) %s' % (message.attr('dn'), message.attr('room'), message.attr('gift'))
+                text = '%s %s 连击X%s' % (name, txt, message.attr('hits'))
+                self._update_gift(text, message)
                 self.gift_popup(name, txt, message.attr('gift'), message.attr('hits'))
 
         elif msg_type in ('ggbb', 'gpbc'):
             if name in self.starList:
                 txt = '抢了%s的%s个%s' % (message.attr('dn'), message.attr('num'), message.attr('gift'))
-                self._update_gift([message.attr('time'), name, message.attr('room'), txt])
+                text = '%s %s' % (name, txt)
+                self._update_gift(text, message)
                 self.star_popup(name, txt)
 
     # 更新全部弹幕
@@ -480,11 +469,13 @@ class App(Window):
         self.star_barrage.insert(tk.END, '\n')
 
     # 更新关注人礼物
-    def _update_gift(self, values):
+    def _update_gift(self, text, msg):
         self.new()
-        idd = self.insert(self.gift_tree, values)
+        self.star_gift.insert(tk.END, msg.attr('time')+' ')
+        self.star_gift.insert(tk.END, text)
         if self.CheckVar:
-            self.gift_tree.see(idd)
+            self.star_gift.see(tk.END)
+        self.star_gift.insert(tk.END, '\n')
 
     # 从文件读取关注列表
     def read_stars(self):
