@@ -123,7 +123,7 @@ class BarrageText(ROSText):
                 self.image_create(tk.END, image=self.static_img['%s.png' % role])
             except KeyError:
                 pass
-            # self.insert(tk.END, ' ')
+            self.insert(tk.END, ' ')
 
     def handle_noble(self, msg):
         nl = msg.attr('nl')
@@ -132,7 +132,7 @@ class BarrageText(ROSText):
                 self.image_create(tk.END, image=self.static_img[noble[nl]])
             except KeyError:
                 pass
-            # self.insert(tk.END, ' ')
+            self.insert(tk.END, ' ')
 
     def handle_cq(self, msg, tag=False):
         dlv = msg.attr('dlv')
@@ -140,25 +140,25 @@ class BarrageText(ROSText):
         bdlv = msg.attr('bdlv')
         if dlv and dc and int(dlv) > 0 and int(dc) > 0:
             self.window_create(tk.END, window=self.cq(dlv, dc, tag))
-            # self.insert(tk.END, ' ')
+            self.insert(tk.END, ' ')
         elif bdlv and int(bdlv) > 0:
             try:
                 self.image_create(tk.END, image=self.static_img['cq_other.png'])
             except KeyError:
                 pass
-            # self.insert(tk.END, ' ')
+            self.insert(tk.END, ' ')
 
     def handle_madel(self, images):
         for image in images:
             self.image_create(tk.END, image=image)
-            # self.insert(tk.END, ' ')
+            self.insert(tk.END, ' ')
 
     def handle_bandge(self, msg, tag=False):
         bnn = msg.attr('bnn')
         bl = msg.attr('bl')
         if bnn and bl:
             self.window_create(tk.END, window=self.bandge(bl, bnn, tag))
-            # self.insert(tk.END, ' ')
+            self.insert(tk.END, ' ')
 
     def handle_level(self, msg):
         ol = msg.attr('ol')
@@ -166,10 +166,10 @@ class BarrageText(ROSText):
         try:
             if ol and int(ol) > 0:
                 self.image_create(tk.END, image=self.lv_img['anchorLV%s.png' % ol])
-                # self.insert(tk.END, ' ')
+                self.insert(tk.END, ' ')
             elif level and int(level) > 0:
                 self.image_create(tk.END, image=self.lv_img[lv[int(level)]])
-                # self.insert(tk.END, ' ')
+                self.insert(tk.END, ' ')
         except KeyError:
             pass
 
