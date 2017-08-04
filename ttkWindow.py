@@ -440,20 +440,22 @@ class App(Window):
 
     # 更新全部弹幕
     def _update_danmaku(self, msg, tag=False, insert=False):
-        idx1 = self.barrage.index(tk.INSERT)
         if self.num < 3000:
             self.num += 1
         else:
             self.barrage.delete(1.0, 2.0)
         if insert:
             self.barrage.insert(tk.END, msg.attr('txt'))
+            # self.barrage.insert(tk.END, '\n')
         else:
             self.barrage.handle_message(msg, tag)
         if self.CheckVar:
             self.barrage.see(tk.END)
         self.barrage.insert(tk.END, '\n')
-        idx2 = self.barrage.index(tk.INSERT)
         if tag:
+            line = int(self.barrage.index(tk.END).split('.')[0])-2
+            idx1 = '{}.0'.format(line)
+            idx2 = '{}.0'.format(line+1)
             self.barrage.tag_add('anchor', idx1, idx2)
 
     # 更新关注人弹幕
