@@ -83,58 +83,58 @@ class ChatRoom(threading.Thread):
 
     def _handle_message(self, message):
         # print(message.body)
-        message.set_attr('time', now_time())
-        msg_type = message.attr('type')
+        message.time = now_time()
+        msg_type = message.type
         if msg_type == 'error':
             logger.error(message.body)
             return None
 
         elif msg_type == 'loginres':
-            message.set_attr('txt', self._join_group())
+            message.txt = self._join_group()
             return message
 
         elif msg_type == 'chatmsg':
             return message
 
         elif msg_type == 'uenter':
-            message.set_attr('txt', '进入直播间！')
+            message.txt = '进入直播间！'
             return message
 
         elif msg_type == 'dgb':
-            gfid = message.attr('gfid')
+            gfid = message.gfid
             try:
                 gift = self.gifts[gfid]
             except KeyError:
                 gift = '未知礼物%s' % gfid
-            message.set_attr('gift', gift)
-            message.set_attr('room', message.attr('rid'))
-            message.set_attr('dn', '主播')
-            message.set_attr('hits', message.attr('hits') or 1)
+            message.gift = gift
+            message.room = message.rid
+            message.dn = '主播'
+            message.hits = message.hits or 1
             return message
 
         elif msg_type == 'bc_buy_deserve':
-            message.set_attr('nn', message.attr('sui')['nick'])
-            message.set_attr('room', message.attr('rid'))
-            message.set_attr('dn', '主播')
-            message.set_attr('gift', self.cq[message.attr('lev')])
-            message.set_attr('hits', message.attr('hits') or 1)
+            message.nn = message.sui['nick']
+            message.room = message.rid
+            message.dn = '主播'
+            message.gift = self.cq[message.lev]
+            message.hits = message.hits or 1
             return message
 
         elif msg_type == 'spbc':
-            message.set_attr('nn', message.attr('sn'))
-            message.set_attr('gift', message.attr('gn'))
-            message.set_attr('room', message.attr('drid'))
-            message.set_attr('hits', message.attr('gc'))
+            message.nn = message.sn
+            message.gift = message.gn
+            message.room = message.drid
+            message.hits = message.gc
             return message
 
         elif msg_type == 'ggbb':
-            message.set_attr('gift', '鱼丸')
-            message.set_attr('num', message.attr('sl'))
+            message.gift = '鱼丸'
+            message.num = message.sl
             return message
 
         elif msg_type == 'gpbc':
-            message.set_attr('gift', message.attr('pnm'))
-            message.set_attr('num', message.attr('cnt'))
+            message.gift = message.pnm
+            message.num = message.cnt
             return message
 
         else:
@@ -160,7 +160,7 @@ class ChatRoom(threading.Thread):
             try:
                 buff = data.decode(errors='replace')
                 message = Message.sniff(buff)
-                # if message.attr('type') == 'chatmsg':
+                # if message.type == 'chatmsg':
                 #     print(message.body)
                 return message
             except UnicodeDecodeError as e:
@@ -184,8 +184,8 @@ class ChatRoom(threading.Thread):
                     continue
                 else:
                     num = 0
-                    message.set_attr('type', 'con_error')
-                    message.set_attr('txt', '弹幕服务器连接错误，请重新连接！')
+                    message.type = 'con_error'
+                    message.txt = '弹幕服务器连接错误，请重新连接！'
                     self.result_put(message)
 
             time.sleep(1)

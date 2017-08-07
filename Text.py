@@ -75,10 +75,10 @@ class BarrageText(ROSText):
         self.tag_config('col_5', foreground='#9b39f4')
         self.tag_config('col_6', foreground='#ff69b4')
 
-    def handle_message(self, message, tag=False):
+    def handle_message(self, message, star=False):
         images = []
         name = 'name'
-        el = message.attr('el')
+        el = message.el
         if el:
             for item in el:
                 if item['eid'] == '1500000005':
@@ -96,9 +96,9 @@ class BarrageText(ROSText):
 
         self.handle_role(message)
         self.handle_noble(message)
-        self.handle_cq(message, tag)
+        self.handle_cq(message, star)
         self.handle_madel(images)
-        self.handle_bandge(message, tag)
+        self.handle_bandge(message, star)
         self.handle_level(message)
         self.handle_name(message, name)
         self.handle_text(message)
@@ -112,11 +112,11 @@ class BarrageText(ROSText):
 
     def handle_role(self, msg):
         role = None
-        if msg.attr('pg') in ('5', '2') and msg.attr('sahf') == '1':
+        if msg.pg in ('5', '2') and msg.sahf == '1':
             role = 'super_admin'
-        elif msg.attr('rg') == '4':
+        elif msg.rg == '4':
             role = 'roomadmin'
-        elif msg.attr('rg') == '5':
+        elif msg.rg == '5':
             role = 'anchor'
         if role:
             try:
@@ -126,7 +126,7 @@ class BarrageText(ROSText):
             self.insert(tk.END, ' ')
 
     def handle_noble(self, msg):
-        nl = msg.attr('nl')
+        nl = msg.nl
         if nl:
             try:
                 self.image_create(tk.END, image=self.static_img[noble[nl]])
@@ -134,12 +134,12 @@ class BarrageText(ROSText):
                 pass
             self.insert(tk.END, ' ')
 
-    def handle_cq(self, msg, tag=False):
-        dlv = msg.attr('dlv')
-        dc = msg.attr('dc')
-        bdlv = msg.attr('bdlv')
+    def handle_cq(self, msg, star=False):
+        dlv = msg.dlv
+        dc = msg.dc
+        bdlv = msg.bdlv
         if dlv and dc and int(dlv) > 0 and int(dc) > 0:
-            self.window_create(tk.END, window=self.cq(dlv, dc, tag))
+            self.window_create(tk.END, window=self.cq(dlv, dc, star))
             self.insert(tk.END, ' ')
         elif bdlv and int(bdlv) > 0:
             try:
@@ -153,16 +153,16 @@ class BarrageText(ROSText):
             self.image_create(tk.END, image=image)
             self.insert(tk.END, ' ')
 
-    def handle_bandge(self, msg, tag=False):
-        bnn = msg.attr('bnn')
-        bl = msg.attr('bl')
+    def handle_bandge(self, msg, star=False):
+        bnn = msg.bnn
+        bl = msg.bl
         if bnn and bl:
-            self.window_create(tk.END, window=self.bandge(bl, bnn, tag))
+            self.window_create(tk.END, window=self.bandge(bl, bnn, star))
             self.insert(tk.END, ' ')
 
     def handle_level(self, msg):
-        ol = msg.attr('ol')
-        level = msg.attr('level')
+        ol = msg.ol
+        level = msg.level
         try:
             if ol and int(ol) > 0:
                 self.image_create(tk.END, image=self.lv_img['anchorLV%s.png' % ol])
@@ -174,17 +174,17 @@ class BarrageText(ROSText):
             pass
 
     def handle_name(self, msg, name, enter=False):
-        self.insert(tk.END, msg.attr('nn'), (name,))
+        self.insert(tk.END, msg.nn, (name,))
         if not enter:
             self.insert(tk.END, '：', (name,))
 
     def handle_text(self, msg):
-        col = msg.attr('col')
+        col = msg.col
         if col and 7 > int(col) > 0:
             tag = color[col]
         else:
             tag = 'col'
-        self.text_insert(msg.attr('txt'), tag)
+        self.text_insert(msg.txt, tag)
 
     def text_insert(self, text, tag):
         res = pattern.split(text)
@@ -198,12 +198,12 @@ class BarrageText(ROSText):
                 except KeyError:
                     self.insert(tk.END, '[emot:dy%s]' % item, (tag, ))
 
-    def cq(self, dlv, dc, tag=False):
+    def cq(self, dlv, dc, star=False):
         digit = len(str(dc))
         width = width_cq[digit]
 
         canvas = tk.Canvas(self, bg='white', borderwidth=0, width=width, height=21, highlightthickness=0)
-        if tag:
+        if star:
             canvas.configure(bg='yellow')
         canvas.create_rectangle(11, 2, width+1, 19, fill=color_cq[dlv], width=0)
         try:
@@ -213,10 +213,10 @@ class BarrageText(ROSText):
         canvas.create_text(width/2+10, 10, fill='white', text='x%s' % dc)
         return canvas
 
-    def bandge(self, bl, bnn, tag=False):
+    def bandge(self, bl, bnn, star=False):
         bl = int(bl)
         canvas = tk.Canvas(self, bg='white', borderwidth=0, width=62, height=24, highlightthickness=0)
-        if tag:
+        if star:
             canvas.configure(bg='yellow')
         try:
             canvas.create_image(0, 4, anchor=tk.NW, image=self.static_img[bandage[bl]['bg']])

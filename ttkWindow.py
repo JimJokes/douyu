@@ -405,8 +405,8 @@ class App(Window):
     # 消息处理
     def _handle_message(self, event):
         message = self.result_q.get()
-        msg_type = message.attr('type')
-        name = message.attr('nn')
+        msg_type = message.type
+        name = message.nn
         if msg_type in ('con_error', 'loginres'):
             self._update_danmaku(message, insert=True)
 
@@ -415,25 +415,25 @@ class App(Window):
             if name in self.starList:
                 tag = True
                 self._update_star_danmaku(message)
-                self.star_popup(name, message.attr('txt'))
+                self.star_popup(name, message.txt)
 
             self._update_danmaku(message, tag)
 
         elif msg_type == 'uenter':
             if name in self.starList:
                 self._update_star_danmaku(message, enter=True)
-                self.star_popup(name, message.attr('txt'))
+                self.star_popup(name, message.txt)
 
         elif msg_type in ('dgb', 'bc_buy_deserve', 'spbc'):
             if name in self.starList:
-                txt = '赠送 %s(ID:%s) %s' % (message.attr('dn'), message.attr('room'), message.attr('gift'))
-                text = '%s %s 连击X%s' % (name, txt, message.attr('hits'))
+                txt = '赠送 %s(ID:%s) %s' % (message.dn, message.room, message.gift)
+                text = '%s %s 连击X%s' % (name, txt, message.hits)
                 self._update_gift(text, message)
-                self.gift_popup(name, txt, message.attr('gift'), message.attr('hits'))
+                self.gift_popup(name, txt, message.gift, message.hits)
 
         elif msg_type in ('ggbb', 'gpbc'):
             if name in self.starList:
-                txt = '抢了%s的%s个%s' % (message.attr('dn'), message.attr('num'), message.attr('gift'))
+                txt = '抢了%s的%s个%s' % (message.dn, message.num, message.gift)
                 text = '%s %s' % (name, txt)
                 self._update_gift(text, message)
                 self.star_popup(name, txt)
@@ -445,7 +445,7 @@ class App(Window):
         else:
             self.barrage.delete(1.0, 2.0)
         if insert:
-            self.barrage.insert(tk.END, msg.attr('txt'))
+            self.barrage.insert(tk.END, msg.txt)
             # self.barrage.insert(tk.END, '\n')
         else:
             self.barrage.handle_message(msg, tag)
@@ -461,7 +461,7 @@ class App(Window):
     # 更新关注人弹幕
     def _update_star_danmaku(self, msg, enter=False):
         self.new()
-        self.star_barrage.insert(tk.END, msg.attr('time')+' ')
+        self.star_barrage.insert(tk.END, msg.time+' ')
         if enter:
             self.star_barrage.handle_uenter(msg)
         else:
@@ -473,7 +473,7 @@ class App(Window):
     # 更新关注人礼物
     def _update_gift(self, text, msg):
         self.new()
-        self.star_gift.insert(tk.END, msg.attr('time')+' ')
+        self.star_gift.insert(tk.END, msg.time+' ')
         self.star_gift.insert(tk.END, text)
         if self.CheckVar:
             self.star_gift.see(tk.END)

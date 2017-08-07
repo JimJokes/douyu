@@ -4,33 +4,21 @@ from utils import deserialize, serialize
 class Message:
 
     body = None
-    _serialized_size = 0
 
     def __init__(self, body):
         self.body = body
 
-    def to_text(self):
-        return serialize(self.body)
-
-    def size(self):
-        return self._serialized_size
-
-    def attr(self, attr_name):
+    def __getattr__(self, item):
         if self.body is None:
             return None
         try:
-            result = self.body[attr_name]
-            return result
+            value = self.body[item]
+            return value
         except KeyError:
             return None
 
-    def set_attr(self, attr_name, value):
-        if self.body is None:
-            self.body = {}
-        try:
-            self.body[attr_name] = value
-        except TypeError:
-            return
+    def to_text(self):
+        return serialize(self.body)
 
     @staticmethod
     def sniff(buff):
