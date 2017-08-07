@@ -482,6 +482,7 @@ class App(Window):
     # 从文件读取关注列表
     def read_stars(self):
         self.stars.delete(1.0, tk.END)
+        self.starList.clear()
         with open(star_file, 'r', encoding='utf-8') as f:
             lines = f.readlines()
             for line in lines:
