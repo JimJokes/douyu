@@ -214,3 +214,4 @@ class ChatRoom(threading.Thread):
 
     def quit(self):
         self.alive.clear()
+        self.app.quit()
